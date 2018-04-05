@@ -164,6 +164,13 @@ public class Player : MonoBehaviour {
 		Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
 		RaycastHit hit;
 		if(Physics.Raycast(ray, out hit)) {
+
+			//NEW SYSTEM
+			if(hit.collider.tag == "Interactable") {
+				hit.collider.GetComponent<WInteractableCaller>().Call();
+			}
+			//END OF NEW SYSTEM
+
 			if(Input.GetMouseButtonDown(0)) {
 				if(WTMode == "" && hit.collider.tag != "Unbreakable" && SelectedConsole == null) {
 					Destroy(Build.FindBlock(hit.collider.transform).gameObject);

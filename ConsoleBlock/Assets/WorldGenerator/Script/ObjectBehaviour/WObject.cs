@@ -2,25 +2,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WObject {
+public class WObject : MonoBehaviour {
 
 	public string Name = "";
 	WMaterialProprieties proprieties;
 
-	public void Initialize () {
+	virtual public void Initialize () {
 		
 	}
 
-	public void Destroy () {
+	virtual public void Destroy () {
 		
 	}
 
-	public void Update () {
+	virtual public void Update () {
 		
 	}
 }
 
-public class WMaterialProprieties {
+public struct WMaterialProprieties {
 	public bool CanBurn = false;
 	public bool HasWaterResistance = true;
 }

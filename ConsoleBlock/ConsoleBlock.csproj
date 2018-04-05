@@ -250,6 +250,9 @@
     <Reference Include="UnityEngine.SpatialTracking">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
+    <Reference Include="TextMeshPro-1.0.55.2017.1.0b12">
+      <HintPath>Assets/WorldGenerator/TextMesh Pro/Plugins/TextMeshPro-1.0.55.2017.1.0b12.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.Advertisements">
       <HintPath>/Users/STUDIOCRAFT/Library/Unity/cache/packages/packages.unity.com/com.unity.ads@2.0.4/UnityEngine.Advertisements.dll</HintPath>
     </Reference>
@@ -261,9 +264,6 @@
     </Reference>
     <Reference Include="UnityEngine.StandardEvents">
       <HintPath>/Users/STUDIOCRAFT/Library/Unity/cache/packages/packages.unity.com/com.unity.standardevents@1.0.12/UnityEngine.StandardEvents.dll</HintPath>
-    </Reference>
-    <Reference Include="TextMeshPro-1.0.55.2017.1.0b12">
-      <HintPath>Assets/WorldGenerator/TextMesh Pro/Plugins/TextMeshPro-1.0.55.2017.1.0b12.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>/Applications/Unity/Unity.app/Contents/MonoBleedingEdge/lib/mono/unity/mscorlib.dll</HintPath>
@@ -298,13 +298,13 @@
       <Project>{6876AB14-0E48-B661-BB9B-C1F20DEF457E}</Project>
       <Name>ConsoleBlock.Plugins</Name>
     </ProjectReference>
-    <ProjectReference Include="Unity.PackageManagerUI.Editor.csproj">
-      <Project>{6877705C-FBD9-0C4F-5AFB-6FB431E5D39D}</Project>
-      <Name>Unity.PackageManagerUI.Editor</Name>
-    </ProjectReference>
     <ProjectReference Include="UnityEditor.StandardEvents.csproj">
       <Project>{6800202F-4402-D405-F8CB-03DC7BD78B92}</Project>
       <Name>UnityEditor.StandardEvents</Name>
+    </ProjectReference>
+    <ProjectReference Include="Unity.PackageManagerUI.Editor.csproj">
+      <Project>{6877705C-FBD9-0C4F-5AFB-6FB431E5D39D}</Project>
+      <Name>Unity.PackageManagerUI.Editor</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -563,17 +563,18 @@
     <Compile Include="Assets\WorldGenerator\Script\FpsTarget.cs" />
     <Compile Include="Assets\WorldGenerator\Script\MaterialOffseter.cs" />
     <Compile Include="Assets\WorldGenerator\Script\MeshBuilder.cs" />
-    <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\Objects\ButtonB.cs" />
     <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\Objects\ButtonScript.cs" />
+    <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\Objects\ConsoleScript.cs" />
     <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\WDataManager.cs" />
     <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\WInteractable.cs" />
+    <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\WInteractableCaller.cs" />
     <Compile Include="Assets\WorldGenerator\Script\ObjectBehaviour\WObject.cs" />
     <Compile Include="Assets\WorldGenerator\Script\ObjExporter.cs" />
     <Compile Include="Assets\WorldGenerator\Script\PrebakedBiomeDataKit.cs" />
     <Compile Include="Assets\WorldGenerator\Script\Structure.cs" />
     <Compile Include="Assets\WorldGenerator\Script\StructureGroup.cs" />
     <Compile Include="Assets\WorldGenerator\Script\SubBiome.cs" />
-    <Compile Include="Assets\WorldGenerator\Script\SubTexture.cs" />
+    <Compile Include="Assets\WorldGenerator\Script\SubWorldTexture.cs" />
     <Compile Include="Assets\WorldGenerator\Script\WaterOffset.cs" />
     <Compile Include="Assets\WorldGenerator\Script\WorldCreator.cs" />
     <Compile Include="Assets\WorldGenerator\Script\WorldLoader.cs" />

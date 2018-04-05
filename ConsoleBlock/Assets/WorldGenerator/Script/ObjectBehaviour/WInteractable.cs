@@ -1,13 +1,15 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class WInteractable : WObject {
 
+	public List<Variable> GlobalVariable = new List<Variable>();
 	public WObjectInput inputSource;
-	public WObjectOutput[] outputSources;
+	public WObjectOutput outputSources;
 
-	public void OnInteraction () {
+	virtual public void OnInteraction () {
 		
 	}
 }
