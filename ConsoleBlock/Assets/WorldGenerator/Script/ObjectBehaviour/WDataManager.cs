@@ -45,7 +45,7 @@ public class WObjectTransmitter {
 	}
 
 	public void SendVariableData (string InteractableName, List<Variable> variables) {
-		
+		/*Send data n stuff*/
 	}
 }
 

@@ -19,33 +19,39 @@ public class ConsoleScript : WInteractable {
 	string DelimitatorChars = " {}()[],\t;";
 	string LineDelimitatorChars = "{};";
 	string ParametersDelimitatorChars = "()";
-	string[] FunctionNames = new string[] {
-		"void","bool","int","float","string","char",
-	};
-	string[] VariableNames = new string[] {
-		"bool","int","float","string","char",
-	};
 	List<string> GlobalFunctionNames = new List<string>();
 
 	string[] Keyword = new string[] {
 		"void","bool","int","float","string","char",
 		"if","else","for","while","break","continue","return"
 	};
+    string[] KeywordFunction = new string[] {
+        "void","bool","int","float","string","char"
+    };
+    string[] KeywordVariable = new string[] {
+        "bool","int","float","string","char",
+    };
+    string[] KeywordFlow = new string[] {
+        "if","else","for","while"
+    };
+    string[] KeywordFlowControl = new string[] {
+        "break","continue","return"
+    };
 
-	//TODO: Code encoding - Reading
+    //TODO: Code encoding - Reading
 
-	// Variable Writing/Reading
-	// Function Triggered w/ Params
-	// Function returning a value
-	// Flow statement (if, for, break, else)
+    // Variable Writing/Reading
+    // Function Triggered w/ Params
+    // Function returning a value
+    // Flow statement (if, for, break, else)
 
-	// Operator Calculation
-	// Line ending: ";", "{}", "()"
+    // Operator Calculation
+    // Line ending: ";", "{}", "()"
 
-	// Global Variable are pre-declared in the code
-	// Global Variable can be marker as public and allow other consoles to see them as input data
+    // Global Variable are pre-declared in the code
+    // Global Variable can be marker as public and allow other consoles to see them as input data
 
-	public void OnCompilation () {
+    public void OnCompilation () {
 		string enc = encscript.Replace("\t"," ");
 		while(enc.Contains("  ")) {
 			enc.Replace("  ", " ");
@@ -76,10 +82,6 @@ public class ConsoleScript : WInteractable {
 		}
 		IndexRead = 0;
 
-		for(int i = 0; i < GlobalVariable.Count; i++) {
-			GlobalVariable[i].source = DefaultGlobalVariable[i].source;
-		}
-
 		ExecuteFunction("Start",new List<Variable>());
 	}
 
@@ -94,27 +96,50 @@ public class ConsoleScript : WInteractable {
 		int bracketsCount = 0;
 
 		for(int i = StartIndex; i < linescript.Length; i++) {
-			if(linescript[i] == "}" && bracketsCount == 0) {
+            string FirstText = GetTextUntilUnothorizedChar(linescript[i]);
+            List<Variable> externalVariables = new List<Variable>();
+            transmitter.AccessAllInteractableVariables(FirstText, out externalVariables);
+
+            if(linescript[i] == "}" && bracketsCount == 0) {
 				break;
 			} else if(linescript[i] == "}") {
 				bracketsCount--;
 			} else if(linescript[i] == "{") {
 				bracketsCount++;
 			} else if(bracketsCount == 0) {
-				if(Keyword.ToList().Contains(linescript[i].Split(' ')[0])) {
-					//It's a keyword!
-				} else if(GlobalFunctionNames.Contains(linescript[i].Split(' ')[0])) {
+				if(Keyword.ToList().Contains(FirstText)) {
+                    //It's a keyword!
+                    if(KeywordVariable.ToList().Contains(FirstText)) {
+                        //Variable creation
+                    } else if(KeywordFlow.ToList().Contains(FirstText)) {
+                        //Flow control
+                    } else if(KeywordFlowControl.ToList().Contains(FirstText)) {
+                        //Flow actions
+                    }
+                } else if(GlobalFunctionNames.Contains(FirstText)) {
 					//It's a function
-				} else if(VariableNameID(GlobalVariable,linescript[i].Split(' ')[0]) != -1) {
+				} else if(VariableNameID(GlobalVariable, FirstText) != -1) {
 					//It's a global variable
-				} else if(VariableNameID(LocalVariable,linescript[i].Split(' ')[0]) != -1) {
+				} else if(VariableNameID(LocalVariable, FirstText) != -1) {
 					//It's a local variable
-				} else if(VariableNameID(,linescript[i].Split(' ')[0]) != -1) {
-					//Get the outputSource's inputs's interactable's dictonnairy of variables
-				}
+				} else if(VariableNameID(externalVariables, FirstText) != -1) {
+                    //Get the connected interactable's dictonnairy of variables
+                }
 			}
 		}
 	}
+
+    public string GetTextUntilUnothorizedChar (string Line) {
+        string Result = string.Empty;
+        for(int i = 0; i < Line.Length; i++) {
+            if(IsAllowedNameChar(Line[i])) {
+                Result += Line[i];
+            } else {
+                break;
+            }
+        }
+        return Result;
+    }
 
 	public void ExecuteFunction (string Name, List<Variable> lvariables) {
 		IndexRead.Add(0);
@@ -135,7 +160,7 @@ public class ConsoleScript : WInteractable {
 				MustReturnObject = true;
 				ObjectType = (VariableType)(FunctionType - 1);
 			}
-		}
+        }
 
 		if(IndexRead[CurrentIndexLayer] < encscript.Length) {
 			return;

@@ -6,8 +6,7 @@ using UnityEngine;
 public class WInteractable : WObject {
 
 	public List<Variable> GlobalVariable = new List<Variable>();
-	public WObjectInput inputSource;
-	public WObjectOutput outputSources;
+    public WObjectTransmitter transmitter;
 
 	virtual public void OnInteraction () {
 		
