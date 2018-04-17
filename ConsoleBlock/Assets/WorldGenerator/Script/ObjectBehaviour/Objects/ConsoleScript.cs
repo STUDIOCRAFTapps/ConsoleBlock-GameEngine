@@ -12,10 +12,15 @@ public class ConsoleScript : WInteractable {
 	int IndexRead = 0;
 	int LoopCommands = 0;
 
-	List<Variable> LocalVariable = new List<Variable>();
+    int FlowControlResult = 0;
+    string FlowControlOutput;
+
+    List<Variable> LocalVariable = new List<Variable>();
 
 	string AllowedChars = "abdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
-	string OperatorChars = ".+-/*%&|^!~<>?";
+    string NumberChars = "0123456789.";
+    string UnothorizedChar = "+-/*%&|^!~=<>? {}()[],\t;\n";
+    string OperatorChars = ".+-/*%&|^!~<>?";
 	string DelimitatorChars = " {}()[],\t;";
 	string LineDelimitatorChars = "{};";
 	string ParametersDelimitatorChars = "()";
@@ -38,7 +43,7 @@ public class ConsoleScript : WInteractable {
         "break","continue","return"
     };
 
-    //TODO: Code encoding - Reading
+    //Code encoding - Reading
 
     // Variable Writing/Reading
     // Function Triggered w/ Params
@@ -51,8 +56,8 @@ public class ConsoleScript : WInteractable {
     // Global Variable are pre-declared in the code
     // Global Variable can be marker as public and allow other consoles to see them as input data
 
-    public void OnCompilation () {
-		string enc = encscript.Replace("\t"," ");
+    public IEnumerator OnCompilation () {
+        string enc = encscript.Replace("\n", " ").Replace("\t", " ");
 		while(enc.Contains("  ")) {
 			enc.Replace("  ", " ");
 		}
@@ -68,69 +73,325 @@ public class ConsoleScript : WInteractable {
 
 		IndexRead = 0;
 		GlobalFunctionNames = new List<string>();
-		for(; IndexRead < linescript.Length; IndexRead++) {
-			if(linescript[IndexRead].IndexOfAny(LineDelimitatorChars.ToCharArray()) == -1) {
-				continue;
-			}
+		for(int i = 0; i < linescript.Length; i++) {
 			int FunctionType = -1;
-			string GlobalFunctionName = FlowGetFunctionName(out FunctionType);
-			if(FunctionType != -1) {
-				if(GlobalFunctionName != null) {
-					GlobalFunctionNames.Add(GlobalFunctionName);
-				}
-			}
+            if(i+1 < linescript.Length) {
+                if(linescript[i+1].Contains("{")) {
+                    if(KeywordFunction.ToList().Contains(GetIndexTextSeparatedByUnothorizedChar(linescript[i],0))) {
+                        GlobalFunctionNames.Add(GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1));
+                    }
+                }
+            }
 		}
 		IndexRead = 0;
 
-		ExecuteFunction("Start",new List<Variable>());
-	}
+		//ExecuteFunction("Init",new List<Variable>());
 
-	public void OnScriptExecution () {
+        yield return null;
+    }
+
+	public IEnumerator OnScriptExecution () {
 		IndexRead = 0;
 		LocalVariable = new List<Variable>();
-		ExecuteFunction("Update",new List<Variable>());
+		//ExecuteFunction("Update",new List<Variable>());
+
+        yield return null;
 	}
 
-	public void ExecuteCodeBlock (int StartIndex) {
+    public List<Variable> GetFunctionParametersTemplate (string FunctionName) {
+        List<Variable> Result = new List<Variable>();
+        int DeclarationLine = -1;
+
+        for(int i = 0; i < linescript.Length; i++) {
+            if(FunctionName == linescript[i]) {
+                DeclarationLine = 1;
+            }
+        }
+
+        if(DeclarationLine != -1) {
+            //Get parameters, separate the stuff by ',' and space
+            string[] Parameters = GetParameters(linescript[DeclarationLine]).Split(',');
+            for(int i = 0; i < Parameters.Length; i++) {
+                string[] SubParameters = Parameters[i].Split(' ');
+                SubParameters.ToList().Remove(string.Empty);
+                Result.Add(new Variable(SubParameters[1],Variable.StringToType(SubParameters[0]),null,new VariableParameters(false,VariableAccessType.v_readonly)));
+            }
+
+            return Result;
+        } else {
+            return null;
+        }
+    }
+
+    public IEnumerator ExecuteFunction (int StartIndex, List<Variable> variableParameters) {
+        int LocalVariableCount = variableParameters.Count;
+        LocalVariable.AddRange(variableParameters);
+
+        StartCoroutine(ExecuteCodeBlock(StartIndex+1));
+
+        LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount - 1, LocalVariableCount);
+        yield return null;
+    }
+
+	public IEnumerator ExecuteCodeBlock (int StartIndex) {
 		int LocalVariableCount = 0;
 		int bracketsCount = 0;
 
-		for(int i = StartIndex; i < linescript.Length; i++) {
-            string FirstText = GetTextUntilUnothorizedChar(linescript[i]);
+        bool IfCommandFailed = false;
+        bool IfCommandFailedReset = false;
+
+        for(int i = StartIndex; i < linescript.Length; i++) {
+            string FirstText = GetIndexTextSeparatedByUnothorizedChar(linescript[i],0);//GetTextUntilUnothorizedChar(linescript[i]);
             List<Variable> externalVariables = new List<Variable>();
             transmitter.AccessAllInteractableVariables(FirstText, out externalVariables);
 
             if(linescript[i] == "}" && bracketsCount == 0) {
-				break;
-			} else if(linescript[i] == "}") {
-				bracketsCount--;
-			} else if(linescript[i] == "{") {
-				bracketsCount++;
-			} else if(bracketsCount == 0) {
-				if(Keyword.ToList().Contains(FirstText)) {
+                break;
+            } else if(linescript[i] == "}") {
+                bracketsCount--;
+            } else if(linescript[i] == "{") {
+                bracketsCount++;
+            } else if(linescript[i] == ";") {
+                continue;
+            } else if(bracketsCount == 0) {
+                if(Keyword.ToList().Contains(FirstText)) {
                     //It's a keyword!
                     if(KeywordVariable.ToList().Contains(FirstText)) {
                         //Variable creation
+                        LocalVariable.Add(new Variable(
+                            GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1),
+                            Variable.StringToType(FirstText),
+                            Variable.StringToObject(GetIndexTextSeparatedByUnothorizedChar(linescript[i], 2), Variable.StringToType(FirstText))
+                        ));
+                        LocalVariableCount++;
                     } else if(KeywordFlow.ToList().Contains(FirstText)) {
                         //Flow control
+                        if(FirstText == "if") {
+                            bool result = (bool)SolveOperators(GetParameters(linescript[i]));
+                            if(result) {
+                                ExecuteCodeBlock(i + 1);
+                            } else {
+                                IfCommandFailed = true;
+                                IfCommandFailedReset = true;
+                            }
+                        }
+                        if(FirstText == "else") {
+                            if(GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1) == "if") {
+                                bool result = (bool)SolveOperators(GetParameters(linescript[i]));
+                                if(result) {
+                                    ExecuteCodeBlock(i + 1);
+                                } else {
+                                    IfCommandFailed = true;
+                                    IfCommandFailedReset = true;
+                                }
+                            } else {
+                                if(IfCommandFailed) {
+                                    ExecuteCodeBlock(i + 1);
+                                }
+                            }
+                        }
+                        if(FirstText == "while") {
+                            while(true) {
+                                bool result = (bool)SolveOperators(GetParameters(linescript[i]));
+                                if(!result) {
+                                    break;
+                                } else {
+                                    ExecuteCodeBlock(i + 1);
+                                    if(FlowControlResult != 0) {
+                                        if(FlowControlResult == 1) {
+                                            break;
+                                        }
+                                        if(FlowControlResult == 3) {
+                                            //TODO: Handle return statement
+                                        }
+                                        FlowControlResult = 0;
+                                    }
+                                    yield return null;
+                                }
+                            }
+                        }
+                        if(FirstText == "for") {
+                            int ForVariableCount = 0;
+                            string InitScript = GetParameters(linescript[i]).Split(';')[0];
+                            string RepeatScript = GetParameters(linescript[i]).Split(';')[2];
+                            string CheckScript = GetParameters(linescript[i]).Split(';')[1];
+
+                            if(KeywordVariable.ToList().Contains(GetIndexTextSeparatedByUnothorizedChar(InitScript,0))) {
+                                //Variable creation
+                                LocalVariable.Add(new Variable(
+                                    GetIndexTextSeparatedByUnothorizedChar(InitScript, 1),
+                                    Variable.StringToType(GetIndexTextSeparatedByUnothorizedChar(InitScript, 0)),
+                                    Variable.StringToObject(GetIndexTextSeparatedByUnothorizedChar(InitScript, 2), Variable.StringToType(GetIndexTextSeparatedByUnothorizedChar(InitScript, 1)))
+                                ));
+                                ForVariableCount++;
+                            }
+
+                            while(true) {
+                                bool result = (bool)SolveOperators(CheckScript);
+                                if(!result) {
+                                    break;
+                                } else {
+                                    ExecuteCodeBlock(i + 1);
+                                    if(FlowControlResult != 0) {
+                                        if(FlowControlResult == 1) {
+                                            break;
+                                        }
+                                        if(FlowControlResult == 3) {
+                                            //TODO: Handle return statement
+                                        }
+                                        FlowControlResult = 0;
+                                    }
+                                    yield return null;
+                                }
+                                BasicLineExecution(RepeatScript);
+                            }
+
+                            LocalVariable.RemoveRange(LocalVariable.Count-ForVariableCount-1,ForVariableCount);
+                        }
                     } else if(KeywordFlowControl.ToList().Contains(FirstText)) {
                         //Flow actions
+                        if(FirstText == "break") {
+                            FlowControlResult = 1;
+                            yield break;
+                        }
+                        if(FirstText == "continue") {
+                            FlowControlResult = 2;
+                            yield break;
+                        }
+                        if(FirstText == "return") {
+                            FlowControlResult = 3;
+                            FlowControlOutput = linescript[i].Split(' ')[1];
+                            yield break;
+                        }
                     }
                 } else if(GlobalFunctionNames.Contains(FirstText)) {
-					//It's a function
-				} else if(VariableNameID(GlobalVariable, FirstText) != -1) {
-					//It's a global variable
-				} else if(VariableNameID(LocalVariable, FirstText) != -1) {
-					//It's a local variable
-				} else if(VariableNameID(externalVariables, FirstText) != -1) {
+                    //It's a function
+                    List<Variable> FunctionParameters = new List<Variable>();
+
+                    //Handle function parameters
+                    FunctionParameters = GetFunctionParametersTemplate(FirstText);
+                    for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
+                        FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
+                    }
+
+                    StartCoroutine(ExecuteFunction(i,FunctionParameters));
+
+                } else if(VariableNameID(GlobalVariable, FirstText) != -1) {
+                    //It's a global variable
+                    int VariableID = VariableNameID(GlobalVariable, FirstText);
+
+                    if(GetSignsAfterUnothorizedChar(linescript[i]) == "++") {
+                        GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
+                    } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
+                        GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
+                    } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
+                        GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                    } else {
+                        GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                    }
+                } else if(VariableNameID(LocalVariable, FirstText) != -1) {
+                    //It's a local variable
+                    int VariableID = VariableNameID(LocalVariable, FirstText);
+
+                    if(GetSignsAfterUnothorizedChar(linescript[i]) == "++") {
+                        LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+                    } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
+                        LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+                    } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
+                        LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                    } else {
+                        LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                    }
+                } else if(VariableNameID(externalVariables, FirstText) != -1) {
                     //Get the connected interactable's dictonnairy of variables
+
+                    int VariableID = VariableNameID(externalVariables, FirstText);
+
+                    if(GetSignsAfterUnothorizedChar(linescript[i]) == "++") {
+                        externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
+                    } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
+                        externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
+                    } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
+                        externalVariables[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                    } else {
+                        externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                    }
                 }
-			}
+
+                //If function;
+                // Execute with parameters
+                //If Variable;
+                // Followed by ++/--
+                //  If Number Type, increment/decrement
+                // Followed by an operator next to =
+                //   Set the variable to: itself (operator) value after the = sign
+                // Followed by =
+                //   Set the variable to the value after the = sign
+
+                if(IfCommandFailedReset) {
+                    IfCommandFailedReset = false;
+                } else {
+                    IfCommandFailed = false;
+                }
+            }
 		}
-	}
+
+        LocalVariable.RemoveRange(LocalVariable.Count-LocalVariableCount-1,LocalVariableCount);
+
+        yield return null;
+    }
+
+    public void BasicLineExecution (string Line) {
+        string FirstText = GetIndexTextSeparatedByUnothorizedChar(Line, 0);
+        List<Variable> externalVariables = new List<Variable>();
+        transmitter.AccessAllInteractableVariables(FirstText, out externalVariables);
+
+        if(VariableNameID(GlobalVariable, FirstText) != -1) {
+            //It's a global variable
+            int VariableID = VariableNameID(GlobalVariable, FirstText);
+
+            if(GetSignsAfterUnothorizedChar(Line) == "++") {
+                GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
+            } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
+                GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
+            } else if(Line.Split(' ')[1].StartsWith("=")) {
+                GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line));
+            } else {
+                GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+            }
+        } else if(VariableNameID(LocalVariable, FirstText) != -1) {
+            //It's a local variable
+            int VariableID = VariableNameID(LocalVariable, FirstText);
+
+            if(GetSignsAfterUnothorizedChar(Line) == "++") {
+                LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+            } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
+                LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+            } else if(Line.Split(' ')[1].StartsWith("=")) {
+                LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line));
+            } else {
+                LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+            }
+        } else if(VariableNameID(externalVariables, FirstText) != -1) {
+            //Get the connected interactable's dictonnairy of variables
+
+            int VariableID = VariableNameID(externalVariables, FirstText);
+
+            if(GetSignsAfterUnothorizedChar(Line) == "++") {
+                externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
+            } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
+                externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
+            } else if(Line.Split(' ')[1].StartsWith("=")) {
+                externalVariables[VariableID].source = SolveOperators(GetApplyParameters(Line));
+            } else {
+                externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+            }
+        }
+    }
 
     public string GetTextUntilUnothorizedChar (string Line) {
         string Result = string.Empty;
+
         for(int i = 0; i < Line.Length; i++) {
             if(IsAllowedNameChar(Line[i])) {
                 Result += Line[i];
@@ -141,369 +402,335 @@ public class ConsoleScript : WInteractable {
         return Result;
     }
 
-	public void ExecuteFunction (string Name, List<Variable> lvariables) {
-		IndexRead.Add(0);
-		bool MustReturnObject = false;
-		VariableType ObjectType;
+    public string GetSignsAfterUnothorizedChar (string Line) {
+        string Result = string.Empty;
 
-		int LocalVariableCount = lvariables.Count;
-		LocalVariable.AddRange(lvariables);
+        for(int i = 0; i < Line.Length; i++) {
+            if(Line[i] == ' ') {
+                return Result;
+            }
+            if(!IsAllowedNameChar(Line[i])) {
+                Result += Line[i];
+            }
+        }
+        return Result;
+    }
 
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			int FunctionType = -1;
-			if(FlowGetFunctionName(out FunctionType) != null) {
-				break;
-			} else {
-				FlowSkipBrackets();
-			}
-			if(FunctionType > 0) {
-				MustReturnObject = true;
-				ObjectType = (VariableType)(FunctionType - 1);
-			}
+    public string GetIndexTextSeparatedByUnothorizedChar (string Line, int Index) {
+        string Result = string.Empty;
+        string[] subResult = Result.Split(UnothorizedChar.ToCharArray());
+        subResult.ToList().Remove(string.Empty);
+
+        return subResult[Index];
+    }
+
+    public string GetParameters (string Line) {
+        string Result = string.Empty;
+        bool ParametersDetected = false;
+        int BracketsCount = 0;
+
+        for(int i = 0; i < Line.Length; i++) {
+            if(ParametersDetected) {
+                Result += Line[i];
+            } else if(Line[i] == '(') {
+                BracketsCount++;
+                ParametersDetected = true;
+            } else if(Line[i] == ')') {
+                BracketsCount--;
+                if(BracketsCount == 0) {
+                    break;
+                }
+            }
+        }
+        return Result;
+    }
+
+    public string GetApplyParameters (string Line) {
+        string Result = string.Empty;
+        bool ParametersDetected = false;
+
+        for(int i = 0; i < Line.Length; i++) {
+            if(ParametersDetected) {
+                Result += Line[i];
+            } else if(Line[i] == '=') {
+                ParametersDetected = true;
+            }
+        }
+        return Result;
+    }
+
+    object SolveOperators (string Parameters) {
+        //TODO: Finish solve operators
+        //TODO: Handle NOT operator, bitwise ~ and logical !
+
+        //COMPILE
+        List<SolveElement> SolveList = new List<SolveElement>();
+        SolveList = SolveCompileLine(Parameters);
+
+        //Find the first chunk (inside the first empty parameter group)
+        //Get the first variable duo with an operator in the middle,
+        //Solve the operator and replace it with variable
+        //Repeat until chunk is just a simple variable.
+        //Find an other chunk
+        //Repeat until there's no chunk remaining
+
+        int readingIndex = 0;
+        int endIndex = SolveList.Count-1;
+        List<SolveElement> tempSolveElement;
+
+        while(SolveList.Count > 1) {
+            //Searching chunk
+            if(SolveList.Contains(new SolveElement(SolveElementType.v_closebrackets)) || SolveList.Contains(new SolveElement(SolveElementType.v_openbrackets))) {
+                //Mulitple chunks found, find the first one
+                for(int i = 0; i < SolveList.Count; i++) {
+                    endIndex = i - 1;
+                    if(SolveList[i] == new SolveElement(SolveElementType.v_closebrackets)) {
+                        for(int x = i; x >= 0; x--) {
+                            readingIndex = x + 1;
+                            if(SolveList[i] == new SolveElement(SolveElementType.v_openbrackets)) {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                tempSolveElement = SolveList.GetRange(readingIndex, endIndex-readingIndex);
+            }
+
+            SolveElement res = SolveChunk(SolveList.GetRange(readingIndex, endIndex - readingIndex));
+            SolveList.RemoveRange(readingIndex, endIndex - readingIndex);
+            SolveList.Insert(readingIndex, res);
         }
 
-		if(IndexRead[CurrentIndexLayer] < encscript.Length) {
-			return;
-		} else {
-			FlowGotoBrackets();
-		}
-
-		//read function line by line, until it's the end of the function or a return statement is called
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			string line = FlowGetTextUntilEnding();
-			string[] subline = line.Split(DelimitatorChars.ToCharArray());
-			if(subline[0] == "return") {
-
-			} else if(/*IsDone*/) {
-				
-			}
-
-			ExecuteLine();
-		}
-
-		IndexRead.RemoveAt(CurrentIndexLayer);
-		CurrentIndexLayer--;
-
-		LocalVariable.RemoveRange(LocalVariable.Count-LocalVariableCount-1,LocalVariableCount);
+        if(SolveList[0].type == SolveElementType.v_variable) {
+            return SolveList[0].subVariable.source;
+        } else {
+            return null;
+        }
 	}
 
-	string ExecuteLine (string l = "") {
-		string line;
-		if(!string.IsNullOrEmpty(l)) {
-			line = l;
-			FlowGotoToLine();
-		} else {
-			line = FlowGetTextUntilEnding();
-		}
-		FlowReturnToLine();
-		//Remove all empty element
-		string[] subline = line.Split(DelimitatorChars.ToCharArray());
-		subline.ToList().Remove(string.Empty);
+    SolveElement SolveChunk (List<SolveElement> solveElements) {
+        // Not and nots
+        // Multi, Divi, Modulo
+        // Plus, minus
+        // Bitshift
+        // Greater Smaller
+        // Equal NotEqual
+        // Bitwise And
+        // Bitwise Nor
+        // Bitwise Or
+        // Logical And
+        // Logical Or
 
-		//Statement as first mention:
-		// IF, ELSE
-		// FOR, WHILE
-		// BREAK, CONTINUE, RETURN
+        List<SolveElement> res = solveElements;
 
-		//Variable as first mention:
-		// FUNCTIONS:
-		//  FunctionName(Parameters)
-		// VARIABLE:
-		//  = ASSIGN
-		//  += ASSIGN WITH AN OPERATOR
+        while(res.Count > 1) {
+            int index = -1;
 
-		//TODO:
-		// Code memory; else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNot))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNot));
 
-		if(subline.Length > 0) {
-			if(subline[0] == "if") {
-				FlowReturnToLine();
-				string parameters = FlowGetParametersUntilEnding(line);
+                res[index+1].
+                continue;
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_not))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_not));
 
-				bool result = (bool)SolveOperators(parameters);
-			} else if(subline[0] == "else") {
+                continue;
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_multiply)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo))) {
 
-			} else if(subline[0] == "for") {
-				LoopCommands = 0;
-				int ExecutionLayer = 0;
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_multiply));
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) < index) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide));
+                }
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) < index) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo));
+                }
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_plus)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus))) {
 
-				FlowReturnToLine();
-				string[] parameters = FlowGetParametersUntilEnding(line).Split(';');
-				int LocalVariableCount = 0;
-				if(VariableNames.ToList().Contains(parameters[0].Split(DelimitatorChars.ToCharArray())[0])) {
-					LocalVariableCount++;
-					LocalVariable.Add(new Variable(
-						parameters[0].Split(DelimitatorChars.ToCharArray())[1],
-						DictonairyElement.VariableNameToType(parameters[0].Split(DelimitatorChars.ToCharArray())[0]),
-						Variable.StringToObject(parameters[0].Split(DelimitatorChars.ToCharArray())[3],DictonairyElement.VariableNameToType(parameters[0].Split(DelimitatorChars.ToCharArray())[0]))
-					));
-				} else {
-					//ERROR
-					return;
-				}
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_plus));
+                if(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus) < index) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus));
+                }
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_bitshiftRightShift)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_bitshiftLeftShift))) {
 
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_bitshiftRightShift));
+                if(new SolveElement(SolveElementType.v_operator, OperatorType.v_bitshiftLeftShift) < index) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_bitshiftLeftShift));
+                }
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_equal)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual))) {
 
-				for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-					if(parameters[1] != string.Empty) {
-						bool r = (bool)SolveOperators(parameters[1]);
-						if(!r) {
-							break;
-						}
-					} else {
-						//ERROR
-						return null;
-					}
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_equal));
+                if(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual) < index) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual));
+                }
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyAnd))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyAnd));
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNor))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNor));
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyOr))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyOr));
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_and))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_and));
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_or))) {
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.or));
+            }
+        }
 
-					string result = ExecuteLine();
-					result = result.Replace(' ', '').Replace('\t','');
+        return res[0];
+    }
 
-					if(LoopCommands == 0) {
-						FlowSkipBrackets();
-						break;
-					}
-					if(LoopCommands == 1) {
-						FlowReturnToBrackets();
-						continue;
-					}
-					if(result.StartsWith("{")) {
-						ExecutionLayer++;
-					}
-					if(result.StartsWith("}")) {
-						if(ExecutionLayer == 0) {
-							FlowSkipBrackets();
-							return null;
-						} else {
-							ExecutionLayer--;
-						}
-					}
+    SolveElement SolveOperation (SubVariable s1, OperatorType o, SubVariable s2) {
+        //TODO: Fix solve operation
+        return new SolveElement(SolveElementType.v_variable, s1.ApplyOperator(o,s2));
+    }
 
-					ExecuteLine(parameters[2]);
-				}
+    List<SolveElement> SolveCompileLine (string Line) {
+        List<SolveElement> Result = new List<SolveElement>();
 
-				for(int i = 0; i < LocalVariableCount; i++) {
-					LocalVariable.RemoveAt(LocalVariable.Count-1);
-				}
-			} else if(subline[0] == "while") {
-				LoopCommands = 0;
-				int ExecutionLayer = 0;
-				for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-					while(true) {
-						string parameters = FlowGetParametersUntilEnding(line);
-						if(parameters != string.Empty) {
-							bool r = (bool)SolveOperators(parameters);
-							if(!r) {
-								break;
-							}
-						} else {
-							//ERROR
-							return null;
-						}
+        bool StartWordRead = true;
+        string CurrentWord = "";
+        bool IsNumberDecimal = false;
+        int SeekingType = 0;
+        for(int i = 0; i < Line.Length; i++) {
+            if(StartWordRead) {
+                StartWordRead = false;
+                if(char.IsDigit(Line[i])) {
+                    //Number
+                    CurrentWord += Line[i];
+                    SeekingType = 0;
+                } else if(Line[i] == '(') {
+                    Result.Add(new SolveElement(SolveElementType.v_openbrackets));
+                    StartWordRead = true;
+                } else if(Line[i] == ')') {
+                    Result.Add(new SolveElement(SolveElementType.v_closebrackets));
+                    StartWordRead = true;
+                } else if(char.IsLetter(Line[i])) {
+                    //Keyword or variable
+                    CurrentWord += Line[i];
+                    SeekingType = 1;
+                } else if(OperatorChars.Contains(Line[i])) {
+                    //Operator
+                    CurrentWord += Line[i];
+                    SeekingType = 2;
+                }
+            } else {
+                if(SeekingType == 0) {
+                    if(NumberChars.Contains(Line[i])) {
+                        if(Line[i] == '.') {
+                            IsNumberDecimal = true;
+                        }
+                        CurrentWord += Line[i];
+                    } else {
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
+                        if(IsNumberDecimal) {
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord))));
+                        } else {
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
+                        }
 
-						string result = ExecuteLine();
+                        i--;
+                        StartWordRead = true;
+                        CurrentWord = string.Empty;
+                        IsNumberDecimal = false;
+                    }
+                } else if(SeekingType == 1) {
+                    if(AllowedChars.Contains(Line[i])) {
+                        CurrentWord += Line[i];
+                    } else {
+                        if(CurrentWord == "false") {
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_bool, false)));
+                        } else if(CurrentWord == "true") {
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_bool, true)));
+                        } else {
+                            //Probably a variable. Check local, global and input
+                            List<Variable> externalVariables = new List<Variable>();
+                            transmitter.AccessAllInteractableVariables(CurrentWord, out externalVariables);
 
-						if(LoopCommands == 0) {
-							FlowSkipBrackets();
-							break;
-						}
-						if(LoopCommands == 1) {
-							FlowReturnToBrackets();
-							continue;
-						}
-						if(result.StartsWith("{")) {
-							ExecutionLayer++;
-						}
-						if(result.StartsWith("}")) {
-							if(ExecutionLayer == 0) {
-								FlowSkipBrackets();
-								return null;
-							} else {
-								ExecutionLayer--;
-							}
-						}
-					}
-				}
-			} else if(subline[0] == "break") {
-				LoopCommands = 1;
-			} else if(subline[0] == "continue") {
-				LoopCommands = 2;
-			} else if(GlobalFunctionNames.Contains(subline[0])) {
-				ExecuteFunction(subline[0],/*Parameters*/);
-			} else if(VariableNameID(GlobalVariable,subline[0]) != -1) {
-				int vID = VariableNameID(GlobalVariable,subline[0]);
-				//Execute stuff
-			} else if(VariableNameID(LocalVariable,subline[0]) != -1) {
-				int vID = VariableNameID(LocalVariable,subline[0]);
-				//Execute stuff
-			} else if(/*OutputVariable(Assign)*/) {
+                            if(GlobalFunctionNames.Contains(CurrentWord)) {
+                                //It's a function
+                                List<Variable> FunctionParameters = new List<Variable>();
 
-			} else if(/*OutputVariable(Trigger)*/) {
+                                //Handle function parameters
+                                FunctionParameters = GetFunctionParametersTemplate(CurrentWord);
+                                for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
+                                    FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
+                                }
 
-			} else if(/*DirectConsoleAcces*/) {
-				if(/*GlobalExternalFunction*/) {
+                                StartCoroutine(ExecuteFunction(i, FunctionParameters));
 
-				} else if(/*GlobalExternalVariable*/) {
+                                //TODO: Handle return statement
 
-				}
-			}
-		}
+                            } else if(VariableNameID(GlobalVariable, CurrentWord) != -1) {
+                                //It's a global variable
+                                int VariableID = VariableNameID(GlobalVariable, CurrentWord);
 
-		//Goto next line (index)
+                                Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(GlobalVariable[VariableID].variableType, GlobalVariable[VariableID].source)));
+                            } else if(VariableNameID(LocalVariable, CurrentWord) != -1) {
+                                //It's a local variable
+                                int VariableID = VariableNameID(LocalVariable, CurrentWord);
 
-		return line;
-	}
+                                Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(LocalVariable[VariableID].variableType, LocalVariable[VariableID].source)));
+                            } else if(VariableNameID(externalVariables, CurrentWord) != -1) {
+                                //Get the connected interactable's dictonnairy of variables
+                                int VariableID = VariableNameID(externalVariables, CurrentWord);
 
-	object SolveOperators (string Parameters) {
-		
-	}
+                                Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(externalVariables[VariableID].variableType, externalVariables[VariableID].source)));
+                            }
+                        }
 
-	int VariableNameID (List<Variable> variables, string Name) {
-		for(int i = 0; i < variables.Count; i++) {
-			if(variables[i].Id == Name) {
-				return i;
-			}
-		}
-		return -1;
-	}
+                        i--;
+                        StartWordRead = true;
+                        CurrentWord = string.Empty;
+                        IsNumberDecimal = false;
+                    }
+                } else if(SeekingType == 2) {
+                    Result.Add(new SolveElement(SolveElementType.v_operator,SolveElement.StringToOperator(CurrentWord)));
+                }
+            }
+        }
 
-	string FlowGetFunctionName (out int FunctionType) {
-		int f = Array.IndexOf(FunctionNames,FlowGetText());
-		FunctionType = f;
-		if(f != -1) {
-			return FlowGetText();
-		} else {
-			return string.Empty;
-		}
-	}
+        return Result;
+    }
 
-	void FlowGotoBrackets () {
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			if(encscript[IndexRead[CurrentIndexLayer]] == '{') {
-				IndexRead[CurrentIndexLayer]++;
-				break;
-			}
-		}
-	}
+    int VariableNameID (List<Variable> variables, string Name) {
+        for(int i = 0; i < variables.Count; i++) {
+            if(variables[i].Id == Name) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
-	void FlowReturnToBrackets () {
-		for(; IndexRead[CurrentIndexLayer] >= 0; IndexRead[CurrentIndexLayer]--) {
-			if(encscript[IndexRead[CurrentIndexLayer]] == '{') {
-				IndexRead[CurrentIndexLayer]++;
-				break;
-			}
-		}
-	}
+    int VariableNameID (List<string> variables, string Name) {
+        for(int i = 0; i < variables.Count; i++) {
+            if(variables[i] == Name) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
-	void FlowReturnToLine () {
-		for(; IndexRead[CurrentIndexLayer] >= 0; IndexRead[CurrentIndexLayer]--) {
-			int f = Array.IndexOf(LineDelimitatorChars.ToCharArray(),encscript[IndexRead[CurrentIndexLayer]]);
-			if(encscript[IndexRead[CurrentIndexLayer]] != -1) {
-				IndexRead[CurrentIndexLayer]++;
-				break;
-			}
-		}
-	}
-
-	void FlowGotoToLine () {
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			int f = Array.IndexOf(LineDelimitatorChars.ToCharArray(),encscript[IndexRead[CurrentIndexLayer]]);
-			if(encscript[IndexRead[CurrentIndexLayer]] != -1) {
-				IndexRead[CurrentIndexLayer]++;
-				break;
-			}
-		}
-	}
-
-	string FlowGetTextUntilEnding () {
-		string Text = "";
-		bool firstallowedchardetected = false;
-
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			int f = Array.IndexOf(LineDelimitatorChars.ToCharArray(),encscript[IndexRead[CurrentIndexLayer]]);
-			if(f != -1) {
-				firstallowedchardetected = true;
-				Text += encscript[IndexRead[CurrentIndexLayer]];
-			} else {
-				if(firstallowedchardetected) {
-					break;
-				}
-			}
-		}
-		return Text;
-	}
-
-	string FlowGetParametersUntilEnding (string line) {
-		string Text = "";
-		int bracketsCount = 0;
-		bool firstallowedchardetected = false;
-
-		for(int i = 0; i < line.Length; i++) {
-			if(encscript[IndexRead[CurrentIndexLayer]] == ')') {
-				if(bracketsCount == 0 && firstallowedchardetected) {
-					break;
-				} else {
-					bracketsCount--;
-				}
-			}
-			if(encscript[IndexRead[CurrentIndexLayer]] == '(') {
-				firstallowedchardetected = true;
-				bracketsCount++;
-			}
-			if(firstallowedchardetected) {
-				Text += line[i];
-			}
-		}
-
-		return Text;
-	}
-
-	void FlowSkipBrackets () {
-		int bracketsCount = 0;
-
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			if(encscript[IndexRead[CurrentIndexLayer]] == '}') {
-				if(bracketsCount == 0) {
-					break;
-				} else {
-					bracketsCount--;
-				}
-			}
-			if(encscript[IndexRead[CurrentIndexLayer]] == '{') {
-				bracketsCount++;
-			}
-		}
-	}
-
-	void FlowSkipToName () {
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			if(IsAllowedNameChar(encscript[IndexRead[CurrentIndexLayer]])) {
-				break;
-			}
-		}
-	}
-
-	string FlowGetText () {
-		string Text = "";
-		bool firstallowedchardetected = false;
-
-		for(; IndexRead[CurrentIndexLayer] < encscript.Length; IndexRead[CurrentIndexLayer]++) {
-			if(IsAllowedNameChar(encscript[IndexRead[CurrentIndexLayer]])) {
-				firstallowedchardetected = true;
-				Text += encscript[IndexRead[CurrentIndexLayer]];
-			} else {
-				if(firstallowedchardetected) {
-					break;
-				}
-			}
-		}
-
-		return Text;
-	}
-
-	bool IsAllowedNameChar (char Char) {
+    bool IsAllowedNameChar (char Char) {
 		return AllowedChars.Contains(Char.ToString());
 	}
 
 	override public void OnInteraction () {
-		//Call the player code to start the ui-console
+		//Call the player code to start the ui-console?
 	}
 }

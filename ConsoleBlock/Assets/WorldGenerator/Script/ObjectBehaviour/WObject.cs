@@ -20,7 +20,7 @@ public class WObject : MonoBehaviour {
 	}
 }
 
-public struct WMaterialProprieties {
+public class WMaterialProprieties {
 	public bool CanBurn = false;
 	public bool HasWaterResistance = true;
 }

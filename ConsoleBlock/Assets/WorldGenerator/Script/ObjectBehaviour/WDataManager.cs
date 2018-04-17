@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -45,7 +44,7 @@ public class WObjectTransmitter {
 	}
 
 	public void SendVariableData (string InteractableName, List<Variable> variables) {
-		/*Send data n stuff*/
+		//TODO: Send variable data
 	}
 }
 
@@ -85,6 +84,147 @@ public class Variable {
 		}
 		return null;
 	}
+
+    public static VariableType StringToType (string S) {
+        switch(S) {
+            case "bool":
+                return VariableType.v_bool;
+            case "int":
+                return VariableType.v_int;
+            case "float":
+                return VariableType.v_float;
+            case "string":
+                return VariableType.v_string;
+            case "char":
+                return VariableType.v_char;
+        }
+        return VariableType.v_bool;
+    }
+}
+
+[Serializable]
+public class SubVariable {
+    public VariableType variableType;
+    [HideInInspector]
+    public object source;
+
+    public SubVariable (VariableType variableType, object source) {
+        this.source = source;
+        this.variableType = variableType;
+    }
+
+    public SubVariable ApplyOperator (OperatorType operatorType, SubVariable SecondVariable) {
+        SubVariable res = this;
+        dynamic t1 = source;
+        dynamic t2 = SecondVariable.source;
+
+        if(operatorType == OperatorType.v_plus) {
+            res.source = t1 + t2;
+        } else if(operatorType == OperatorType.v_minus) {
+            res.source = t1 - t2;
+        } else if(operatorType == OperatorType.v_multiply) {
+            res.source = t1 * t2;
+        } else if(operatorType == OperatorType.v_divide) {
+            res.source = t1 / t2;
+        } else if(operatorType == OperatorType.v_modulo) {
+            res.source = t1 % t2;
+        } else if(operatorType == OperatorType.v_greater) {
+            res.source = t1 > t2;
+        } else if(operatorType == OperatorType.v_smaller) {
+            res.source = t1 < t2;
+        } else if(operatorType == OperatorType.v_greaterEqual) {
+            res.source = t1 >= t2;
+        } else if(operatorType == OperatorType.v_smallerEqual) {
+            res.source = t1 <= t2;
+        } else if(operatorType == OperatorType.v_equal) {
+            res.source = t1 == t2;
+        } else if(operatorType == OperatorType.v_notEqual) {
+            res.source = t1 != t2;
+        } else if(operatorType == OperatorType.v_binairyAnd) {
+            res.source = t1 & t2;
+        } else if(operatorType == OperatorType.v_binairyOr) {
+            res.source = t1 | t2;
+        } else if(operatorType == OperatorType.v_binairyNor) {
+            res.source = t1 ^ t2;
+        } else if(operatorType == OperatorType.v_and) {
+            res.source = t1 && t2;
+        } else if(operatorType == OperatorType.v_or) {
+            res.source = t1 || t2;
+        } else if(operatorType == OperatorType.v_binairyLeftShift) {
+            res.source = t1 << t2;
+        } else if(operatorType == OperatorType.v_binairyRightShift) {
+            res.source = t1 >> t2;
+        }
+
+        return res;
+    }
+}
+
+[Serializable]
+public class SolveElement {
+    public SolveElementType type;
+    public SubVariable subVariable;
+    public OperatorType operatorType;
+
+    public SolveElement (SolveElementType type) {
+        this.type = type;
+    }
+
+    public SolveElement (SolveElementType type, SubVariable subVariable) {
+        this.type = type;
+        this.subVariable = subVariable;
+    }
+
+    public SolveElement (SolveElementType type, OperatorType operatorType) {
+        this.type = type;
+        this.operatorType = operatorType;
+    }
+
+    public static OperatorType StringToOperator (string Operator) {
+        switch(Operator) {
+            case "+":
+            return OperatorType.v_plus;
+            case "-":
+            return OperatorType.v_minus;
+            case "*":
+            return OperatorType.v_multiply;
+            case "/":
+            return OperatorType.v_divide;
+            case "%":
+            return OperatorType.v_modulo;
+            case ">":
+            return OperatorType.v_greater;
+            case "<":
+            return OperatorType.v_smaller;
+            case "==":
+            return OperatorType.v_equal;
+            case ">=":
+            return OperatorType.v_greaterEqual;
+            case "<=":
+            return OperatorType.v_smallerEqual;
+            case "!=":
+            return OperatorType.v_notEqual;
+            case "&":
+            return OperatorType.v_binairyAnd;
+            case "|":
+            return OperatorType.v_binairyOr;
+            case "^":
+            return OperatorType.v_binairyNor;
+            case "&&":
+            return OperatorType.v_and;
+            case "||":
+            return OperatorType.v_or;
+            case "<<":
+            return OperatorType.v_binairyRightShift;
+            case ">>":
+            return OperatorType.v_binairyLeftShift;
+            case "!":
+            return OperatorType.v_not;
+            case "~":
+            return OperatorType.v_binairyNot;
+        }
+        return OperatorType.v_multiply;
+    }
 }
 
 public class VariableParameters {
@@ -108,4 +248,34 @@ public enum VariableType {
 	v_float,
 	v_string,
 	v_char
+}
+
+public enum SolveElementType {
+    v_operator,
+    v_openbrackets,
+    v_closebrackets,
+    v_variable
+}
+
+public enum OperatorType {
+    v_plus,
+    v_minus,
+    v_multiply,
+    v_divide,
+    v_modulo,
+    v_greater,
+    v_smaller,
+    v_greaterEqual,
+    v_smallerEqual,
+    v_equal,
+    v_notEqual,
+    v_binairyAnd,
+    v_binairyOr,
+    v_binairyNor,
+    v_binairyNot, 
+    v_and,
+    v_or,
+    v_not,
+    v_binairyRightShift,
+    v_binairyLeftShift
 }
