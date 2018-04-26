@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class WObjectTransmitter {
-	public List<WInteractable> sources;
+	public List<WInteractable> sources = new List<WInteractable>();
 
 	public bool AccessWriteInteractableVariables (string InteractableName, out List<Variable> variables) {
 		List<Variable> result = new List<Variable>();
