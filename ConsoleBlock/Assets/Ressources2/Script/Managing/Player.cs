@@ -65,9 +65,9 @@ public class Player : MonoBehaviour {
             }
 
 
-            if(SpecificTypeModeActive) {
-                if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress)) {
-                    if(SpecificTypeMode == SpecificTypeModes.Link) {
+            if(hit.collider.GetComponent<WInteractableCaller>() != null) {
+                if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Transmition) {
+                    if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.Link) {
                         WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
                         if(interactable != null && interactable != linksource) {
                             if(interactable.transmitter.sources.Contains(linksource)) {
@@ -78,6 +78,13 @@ public class Player : MonoBehaviour {
                             SpecificTypeModeActive = false;
                         }
                     }
+                } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.TactileInteraction) {
+                    hit.collider.GetComponent<WInteractableCaller>().TactileCall(
+                        hit.textureCoord,
+                        InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress),
+                        InputControl.GetInput(InputControl.InputType.MouseSecondairyPress),
+                        InputControl.GetInputUp(InputControl.InputType.MouseSecondairyPress)
+                    );
                 }
             } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !InputControl.GetInput(InputControl.InputType.Building)) {
                 if(hit.collider.tag == "Interactable") {

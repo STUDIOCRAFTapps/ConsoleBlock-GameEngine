@@ -57,6 +57,18 @@ public class ConsoleScript : WInteractable {
     // Global Variable are pre-declared in the code
     // Global Variable can be marker as public and allow other consoles to see them as input data
 
+    override public void Update () {
+        for(int i = FunctionCall.Count-1; i >= 0; i--) {
+            if(GlobalFunctionNames.Contains(FunctionCall[i].Name)) {
+                ExecuteFunction(FunctionCall[i].Name, FunctionCall[i].parameters);
+                FunctionCall.Remove(FunctionCall[i]);
+            } else {
+                FunctionCall.Remove(FunctionCall[i]);
+            }
+        }
+        StartCoroutine(OnScriptExecution());
+    }
+
     public IEnumerator OnCompilation () {
         string enc = encscript.Replace("\n", " ").Replace("\t", " ");
 		while(enc.Contains("  ")) {
@@ -102,6 +114,8 @@ public class ConsoleScript : WInteractable {
 		ExecuteFunction("Init",new List<Variable>());
 
         yield return null;
+
+        //TODO: Make sure global functions are sent to the dictionnairy
     }
 
 	public IEnumerator OnScriptExecution () {
@@ -151,6 +165,7 @@ public class ConsoleScript : WInteractable {
         int LocalVariableCount = variableParameters.Count;
         LocalVariable.AddRange(variableParameters);
 
+        //TODO: Executing functions by name: Fix the script that finds the name
         StartCoroutine(ExecuteCodeBlock(GlobalFunctionIndex[GlobalFunctionNames.IndexOf(Name)] + 1));
         FlowControlResult = 0;
 
@@ -166,9 +181,13 @@ public class ConsoleScript : WInteractable {
         bool IfCommandFailedReset = false;
 
         for(int i = StartIndex; i < linescript.Length; i++) {
-            string FirstText = GetIndexTextSeparatedByUnothorizedChar(linescript[i],0);//GetTextUntilUnothorizedChar(linescript[i]);
+            string FirstText = GetIndexTextSeparatedByUnothorizedChar(linescript[i],0);
+            string SecondText = GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1);
             List<Variable> externalVariables = new List<Variable>();
+            List<FunctionTemplate> externalFunctions = new List<FunctionTemplate>();
             transmitter.AccessWriteInteractableVariables(FirstText, out externalVariables);
+            transmitter.AccessAllInteractableFunction(FirstText, out externalFunctions);
+            //TODO: External Functions Calls
 
             if(linescript[i] == "}" && bracketsCount == 0) {
                 break;
@@ -299,7 +318,7 @@ public class ConsoleScript : WInteractable {
                         FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
                     }
 
-                    StartCoroutine(ExecuteFunction(i,FunctionParameters));
+                    StartCoroutine(ExecuteFunction(SecondText,FunctionParameters));
                     FlowControlResult = 0;
 
                 } else if(VariableNameID(GlobalVariable, FirstText) != -1) {
@@ -328,8 +347,8 @@ public class ConsoleScript : WInteractable {
                     } else {
                         LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
                     }
-                } else if(VariableNameID(externalVariables, FirstText) != -1) {
-                    int VariableID = VariableNameID(externalVariables, FirstText);
+                } else if(VariableNameID(externalVariables, SecondText) != -1) {
+                    int VariableID = VariableNameID(externalVariables, SecondText);
 
                     if(GetSignsAfterUnothorizedChar(linescript[i]) == "++") {
                         externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
@@ -340,7 +359,20 @@ public class ConsoleScript : WInteractable {
                     } else {
                         externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
                     }
-                    transmitter.ApplyWriteInteractableVariables(FirstText, externalVariables);
+                    transmitter.ApplyWriteInteractableVariables(SecondText, externalVariables);
+                } else if(FunctionTemplatesContains(externalFunctions, SecondText) != -1) {
+                    //It's a function
+                    List<Variable> FunctionParameters = new List<Variable>();
+
+                    //Handle function parameters
+                    FunctionParameters = GetFunctionParametersTemplate(FirstText);
+                    for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
+                        FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
+                    }
+
+                    transmitter.SendInteractableFunctionCall(FirstText,new FunctionCaller(SecondText, FunctionParameters));
+                    FlowControlResult = 0;
+
                 }
 
                 //If function;
@@ -368,8 +400,11 @@ public class ConsoleScript : WInteractable {
 
     public void BasicLineExecution (string Line) {
         string FirstText = GetIndexTextSeparatedByUnothorizedChar(Line, 0);
+        string SecondText = GetIndexTextSeparatedByUnothorizedChar(Line, 1);
         List<Variable> externalVariables = new List<Variable>();
+        List<FunctionTemplate> externalFunctions = new List<FunctionTemplate>();
         transmitter.AccessWriteInteractableVariables(FirstText, out externalVariables);
+        transmitter.AccessAllInteractableFunction(FirstText, out externalFunctions);
 
         if(VariableNameID(GlobalVariable, FirstText) != -1) {
             //It's a global variable
@@ -412,7 +447,25 @@ public class ConsoleScript : WInteractable {
                 externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
             }
             transmitter.ApplyWriteInteractableVariables(FirstText, externalVariables);
+        } else if(FunctionTemplatesContains(externalFunctions, SecondText) != -1) {
+            List<Variable> FunctionParameters = new List<Variable>();
+
+            FunctionParameters = GetFunctionParametersTemplate(FirstText);
+            for(int p = 0; p < GetParameters(Line).Split(',').Length; p++) {
+                FunctionParameters[p].source = SolveOperators(GetParameters(Line).Split(',')[p]);
+            }
+
+            transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
         }
+    }
+
+    public int FunctionTemplatesContains (List<FunctionTemplate> functionTemplates, string Name) {
+        for(int i = 0; i < functionTemplates.Count; i++) {
+            if(functionTemplates[i].Name == Name) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public string GetTextUntilUnothorizedChar (string Line) {

@@ -75,6 +75,7 @@
     <Compile Include="Assets\Ressources2\Script\Objects\BuildingBlock.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ButtonScript.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ConsoleScript.cs" />
+    <Compile Include="Assets\Ressources2\Script\Objects\ScreenScript.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\ArrowDrag.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\BattryOperator.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\Block.cs" />
@@ -401,6 +402,7 @@
     <None Include="Assets\WorldGenerator\Resources\ConsoleBlockFiles\TitleThemes\Main.txt" />
     <None Include="Assets\WorldGenerator\DX11_Tessellation\DX11_Tessellation_Free\Shaders\StandardPBS_Phong.shader" />
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\Bloom.shader" />
+    <None Include="Assets\Ressources2\Graphics\UI\Font\Licence.txt" />
     <None Include="Assets\WorldGenerator\Art\Shaders\StandardSpecular.shader" />
     <None Include="Assets\WorldGenerator\PostProcessing\Editor Resources\Monitors\VectorscopeRender.shader" />
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\EyeAdaptation.shader" />

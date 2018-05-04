@@ -43,7 +43,18 @@ public class WObjectTransmitter {
 		return false;
 	}
 
-	public void ApplyWriteInteractableVariables (string InteractableName, List<Variable> variables) {
+    public bool AccessAllInteractableFunction (string InteractableName, out List<FunctionTemplate> functions) {
+        for(int i = 0; i < sources.Count; i++) {
+            if(sources[i].Name == InteractableName) {
+                functions = sources[i].GlobalFunctionsDictionnairy;
+                return true;
+            }
+        }
+        functions = new List<FunctionTemplate>();
+        return false;
+    }
+
+    public void ApplyWriteInteractableVariables (string InteractableName, List<Variable> variables) {
         for(int i = 0; i < sources.Count; i++) {
             if(sources[i].Name == InteractableName) {
                 for(int c = 0; c < variables.Count; c++) {
@@ -56,6 +67,15 @@ public class WObjectTransmitter {
                         }
                     }
                 }
+                break;
+            }
+        }
+    }
+
+    public void SendInteractableFunctionCall (string InteractableName, FunctionCaller caller) {
+        for(int i = 0; i < sources.Count; i++) {
+            if(sources[i].Name == InteractableName) {
+                sources[i].FunctionCall.Add(caller);
                 break;
             }
         }
@@ -292,4 +312,14 @@ public enum OperatorType {
     v_not,
     v_binairyRightShift,
     v_binairyLeftShift
+}
+
+public class FunctionCaller {
+    public List<Variable> parameters;
+    public string Name;
+
+    public FunctionCaller (string Name, List<Variable> parameters) {
+        this.parameters = parameters;
+        this.Name = Name;
+    }
 }
