@@ -203,7 +203,6 @@ public class BuildingManager : MonoBehaviour {
                         } else {
                             float curdirX = bb.Parent.transform.InverseTransformPoint(hit.point).z - bb.Parent.transform.InverseTransformPoint(hit.collider.transform.position).z;
                             float curdirY = bb.Parent.transform.InverseTransformPoint(hit.point).y - bb.Parent.transform.InverseTransformPoint(hit.collider.transform.position).y;
-                            Debug.Log(curdirX + ", " + curdirY);
 
                             float rot = 90f;
                             float blockAmp = 1f;

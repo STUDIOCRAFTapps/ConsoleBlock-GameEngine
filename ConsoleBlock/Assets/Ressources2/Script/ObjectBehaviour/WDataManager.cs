@@ -54,6 +54,20 @@ public class WObjectTransmitter {
         return false;
     }
 
+    public FunctionTemplate AccessSpecificInteractableFunction (string InteractableName, string FunctionName) {
+        for(int i = 0; i < sources.Count; i++) {
+            if(sources[i].Name == InteractableName) {
+                for(int x = 0; x < sources[i].GlobalFunctionsDictionnairy.Count; x++) {
+                    if(sources[i].GlobalFunctionsDictionnairy[x].Name == FunctionName) {
+                        return sources[i].GlobalFunctionsDictionnairy[x];
+                    }
+                }
+                break;
+            }
+        }
+        return null;
+    }
+
     public void ApplyWriteInteractableVariables (string InteractableName, List<Variable> variables) {
         for(int i = 0; i < sources.Count; i++) {
             if(sources[i].Name == InteractableName) {
@@ -163,16 +177,22 @@ public class SubVariable {
         } else if(operatorType == OperatorType.v_modulo) {
             res.source = t1 % t2;
         } else if(operatorType == OperatorType.v_greater) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 > t2;
         } else if(operatorType == OperatorType.v_smaller) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 < t2;
         } else if(operatorType == OperatorType.v_greaterEqual) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 >= t2;
         } else if(operatorType == OperatorType.v_smallerEqual) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 <= t2;
         } else if(operatorType == OperatorType.v_equal) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 == t2;
         } else if(operatorType == OperatorType.v_notEqual) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 != t2;
         } else if(operatorType == OperatorType.v_binairyAnd) {
             res.source = t1 & t2;
@@ -181,8 +201,10 @@ public class SubVariable {
         } else if(operatorType == OperatorType.v_binairyNor) {
             res.source = t1 ^ t2;
         } else if(operatorType == OperatorType.v_and) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 && t2;
         } else if(operatorType == OperatorType.v_or) {
+            res.variableType = VariableType.v_bool;
             res.source = t1 || t2;
         } else if(operatorType == OperatorType.v_binairyLeftShift) {
             res.source = t1 << t2;
@@ -195,7 +217,7 @@ public class SubVariable {
 }
 
 [Serializable]
-public class SolveElement {
+public class SolveElement : IEquatable<SolveElement> {
     public SolveElementType type;
     public SubVariable subVariable;
     public OperatorType operatorType;
@@ -258,6 +280,34 @@ public class SolveElement {
             return OperatorType.v_binairyNot;
         }
         return OperatorType.v_multiply;
+    }
+
+    public int CompareTo (SolveElement obj) {
+        if(this.type == SolveElementType.v_operator) {
+            if(this.operatorType == obj.operatorType) {
+                return 0;
+            } else {
+                return -1;
+            }
+        } else {
+            return -1;
+        }
+    }
+
+    public bool Equals (SolveElement other) {
+        if(this.type == SolveElementType.v_operator && other.type == SolveElementType.v_operator) {
+            if(this.operatorType == other.operatorType) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if(this.type == SolveElementType.v_closebrackets && other.type == SolveElementType.v_closebrackets) {
+            return true;
+        } else if(this.type == SolveElementType.v_openbrackets && other.type == SolveElementType.v_openbrackets) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

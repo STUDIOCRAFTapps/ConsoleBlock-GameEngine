@@ -8,10 +8,18 @@ public class WInteractableCaller : MonoBehaviour {
     public CallType callType;
 
     public WInteractable Call () {
-        if(callType == CallType.Interaction) {
-            interactable.OnInteraction();
+        if(callType == CallType.TactileInteraction) {
             return null;
-        } else if(callType == CallType.TactileInteraction) {
+        } else if(callType == CallType.Transmition || callType == CallType.PowerOuput || callType == CallType.PowerInput) {
+            return interactable;
+        } else {
+            return null;
+        }
+    }
+
+    public WInteractable Call (Player player) {
+        if(callType == CallType.Interaction) {
+            interactable.OnInteraction(player);
             return null;
         } else {
             return interactable;

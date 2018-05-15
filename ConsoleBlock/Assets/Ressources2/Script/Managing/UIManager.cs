@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour {
-
     public Widget[] widget;
+    public DefaultUI[] UIComponents;
+    public Player player;
 
     public void EditWidgetValue (string Id, int Offset) {
         for(int i = 0; i < widget.Length; i++) {
@@ -28,6 +29,24 @@ public class UIManager : MonoBehaviour {
     public void UpdateWidget (int Id) {
         widget[Id].Display.sprite = widget[Id].sprites[widget[Id].Value];
     }
+
+    public void CloseUI () {
+        foreach(DefaultUI ui in UIComponents) {
+            ui.gameObject.SetActive(false);
+        }
+    }
+
+    public void OpenUI (string ID, WInteractable interactable) {
+        for(int i = 0; i < UIComponents.Length; i++) {
+            if(UIComponents[i].ID == ID) {
+                UIComponents[i].manager = this;
+                UIComponents[i].Target = interactable;
+                UIComponents[i].gameObject.SetActive(true);
+                UIComponents[i].OpenUI();
+                break;
+            }
+        }
+    }
     
 }
 
@@ -39,4 +58,41 @@ public class Widget {
     public Image Display;
 
     public Sprite[] sprites;
+}
+
+[Serializable]
+public class BasicUIComponent {
+    public string Title;
+    public BasicUITabs[] uiTabs;
+}
+
+[Serializable]
+public class BasicUITabs {
+    public string Name;
+    public BasicUITabType type;
+    public UIPanel panel;
+    public Button button;
+}
+
+public enum BasicUITabType {
+    Button,
+    TabPanelOpener
+}
+
+[Serializable]
+public class UIInputs {
+    public RectTransform input;
+    public UIType type;
+
+    public UIInputs (RectTransform input, UIType type) {
+        this.input = input;
+        this.type = type;
+    }
+}
+
+public enum UIType {
+    Button,
+    InputField,
+    NumberField,
+    AutocompleteHelper
 }

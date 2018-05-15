@@ -72,27 +72,6 @@ public class ScreenScript : WInteractable {
     }
 
     override public void Update () {
-        if(Input.GetKeyDown(KeyCode.F)) {
-            //TODO: Remove, testing only
-            FunctionCall.Add(new FunctionCaller("Fill", new List<Variable>() {
-                new Variable("r",VariableType.v_float,0.3f),
-                new Variable("g",VariableType.v_float,0.2f),
-                new Variable("b",VariableType.v_float,0.9f)
-            }));
-            FunctionCall.Add(new FunctionCaller("SetColor", new List<Variable>() {
-                new Variable("r",VariableType.v_float,1f),
-                new Variable("g",VariableType.v_float,1f),
-                new Variable("b",VariableType.v_float,1f)
-            }));
-            FunctionCall.Add(new FunctionCaller("SetTextCursor", new List<Variable>() {
-                new Variable("x",VariableType.v_int,5),
-                new Variable("y",VariableType.v_int,5),
-            }));
-            FunctionCall.Add(new FunctionCaller("DrawText", new List<Variable>() {
-                new Variable("text",VariableType.v_string,"HELLO--- ThiSQ{] abbabbabbabba")
-            }));
-        }
-
         for(int i = 0; i < FunctionCall.Count; i++) {
             int pr = i;
             i = 0;

@@ -3,17 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-//TODO: GlobalFunctions
-
 public class WInteractable : WObject {
 
 	public List<Variable> GlobalVariable = new List<Variable>();
     public List<FunctionTemplate> GlobalFunctionsDictionnairy = new List<FunctionTemplate>();
     public List<FunctionCaller> FunctionCall = new List<FunctionCaller>();
     public WObjectTransmitter transmitter = new WObjectTransmitter();
+    [HideInInspector]
+    public bool IsInteracting = false;
 
-	virtual public void OnInteraction () {
-		
+	virtual public void OnInteraction (Player player) {
+        //TODO: Default: Open naming menu
+        IsInteracting = true;
 	}
 }
 

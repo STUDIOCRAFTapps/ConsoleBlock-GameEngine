@@ -59,7 +59,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\CanvasObjects.cs" />
+    <Compile Include="Assets\Jetpack.cs" />
     <Compile Include="Assets\PortInputField.cs" />
+    <Compile Include="Assets\Ressources2\Script\Effect\Billboard.cs" />
     <Compile Include="Assets\Ressources2\Script\Effect\CinematicFollower.cs" />
     <Compile Include="Assets\Ressources2\Script\Effect\FloatEffect.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\BuildingManager.cs" />
@@ -68,6 +70,8 @@
     <Compile Include="Assets\Ressources2\Script\Managing\InputControl.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\Player.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\UIManager.cs" />
+    <Compile Include="Assets\Ressources2\Script\Managing\UIPanel.cs" />
+    <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\DefaultUI.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WDataManager.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractable.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractableCaller.cs" />
@@ -75,6 +79,7 @@
     <Compile Include="Assets\Ressources2\Script\Objects\BuildingBlock.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ButtonScript.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ConsoleScript.cs" />
+    <Compile Include="Assets\Ressources2\Script\Objects\ConsoleUI.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ScreenScript.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\ArrowDrag.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\BattryOperator.cs" />
@@ -163,6 +168,7 @@
     <Compile Include="Assets\Ressources2\Script\World\WorldManager.cs" />
     <Compile Include="Assets\Ressources2\Script\World\WorldTexture.cs" />
     <Compile Include="Assets\SwitchCodingType.cs" />
+    <Compile Include="Assets\TextSizeFitter.cs" />
     <Compile Include="Assets\Tool\StoneTextureCreatorTool.cs" />
     <Compile Include="Assets\WorldGenerator\Art\Materials\UnitySkyboxShaders-master\Assets\Test\Misc\CameraMove.cs" />
     <Compile Include="Assets\WorldGenerator\BattleTransitions\SimpleBlit.cs" />
@@ -365,6 +371,7 @@
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\BuiltinDebugViews.shader" />
     <None Include="Assets\WorldGenerator\TextMesh Pro\Fonts\Oswald-Bold - OFL.txt" />
     <None Include="Assets\WorldGenerator\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Masking.shader" />
+    <None Include="Assets\Ressources2\Graphics\Shader\Blurr.shader" />
     <None Include="Assets\WorldGenerator\BattleTransitions\BattleTransitions.shader" />
     <None Include="Assets\WorldGenerator\DX11_Tessellation\DX11_Tessellation_Free\Shaders\StandardPBS_EdgeLength.shader" />
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\Common.cginc" />
@@ -399,6 +406,7 @@
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\ScreenSpaceRaytrace.cginc" />
     <None Include="Assets\WorldGenerator\Art\Materials\UnitySkyboxShaders-master\Assets\Skybox Shaders\Horizon With Sun Skybox.shader" />
     <None Include="Assets\WorldGenerator\Art\Materials\UnitySkyboxShaders-master\Assets\Skybox Shaders\RGBM Cubed Skybox.shader" />
+    <None Include="Assets\Ressources2\Graphics\UI\Overgeo.shader" />
     <None Include="Assets\WorldGenerator\Resources\ConsoleBlockFiles\TitleThemes\Main.txt" />
     <None Include="Assets\WorldGenerator\DX11_Tessellation\DX11_Tessellation_Free\Shaders\StandardPBS_Phong.shader" />
     <None Include="Assets\WorldGenerator\PostProcessing\Resources\Shaders\Bloom.shader" />

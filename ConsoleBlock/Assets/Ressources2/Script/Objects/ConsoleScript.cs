@@ -17,15 +17,15 @@ public class ConsoleScript : WInteractable {
 
     List<Variable> LocalVariable = new List<Variable>();
 
-	string AllowedChars = "abdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
+	string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
     string NumberChars = "0123456789.";
     string UnothorizedChar = "+-/*%&|^!~=<>? {}()[],\t;\n";
-    string OperatorChars = ".+-/*%&|^!~<>?";
+    string OperatorChars = ".+-/*%&|^!~<>?=";
 	string DelimitatorChars = " {}()[],\t;";
 	string LineDelimitatorChars = "{};";
 	string ParametersDelimitatorChars = "()";
-	List<string> GlobalFunctionNames = new List<string>();
-    List<int> GlobalFunctionIndex = new List<int>();
+	public List<string> GlobalFunctionNames = new List<string>();
+    public List<int> GlobalFunctionIndex = new List<int>();
 
     string[] Keyword = new string[] {
 		"void","bool","int","float","string","char",
@@ -44,6 +44,7 @@ public class ConsoleScript : WInteractable {
         "break","continue","return"
     };
 
+
     //Code encoding - Reading
 
     // Variable Writing/Reading
@@ -57,10 +58,20 @@ public class ConsoleScript : WInteractable {
     // Global Variable are pre-declared in the code
     // Global Variable can be marker as public and allow other consoles to see them as input data
 
+    override public void OnInteraction (Player player) {
+        IsInteracting = true;
+        player.OpenUI();
+        player.uiManager.OpenUI("Console Script Editor", this);
+    }
+
+    void Start () {
+        StartCoroutine(OnCompilation());
+    }
+
     override public void Update () {
-        for(int i = FunctionCall.Count-1; i >= 0; i--) {
+        for(int i = 0; i < FunctionCall.Count; i++) {
             if(GlobalFunctionNames.Contains(FunctionCall[i].Name)) {
-                ExecuteFunction(FunctionCall[i].Name, FunctionCall[i].parameters);
+                StartCoroutine(ExecuteFunction(FunctionCall[i].Name, FunctionCall[i].parameters));
                 FunctionCall.Remove(FunctionCall[i]);
             } else {
                 FunctionCall.Remove(FunctionCall[i]);
@@ -70,21 +81,43 @@ public class ConsoleScript : WInteractable {
     }
 
     public IEnumerator OnCompilation () {
+        for(int i = 0; i < GlobalVariable.Count; i++) {
+            if(GlobalVariable[i].source == null) {
+                if(GlobalVariable[i].variableType == VariableType.v_bool) {
+                    GlobalVariable[i].source = false;
+                }
+                if(GlobalVariable[i].variableType == VariableType.v_int) {
+                    GlobalVariable[i].source = 0;
+                }
+                if(GlobalVariable[i].variableType == VariableType.v_char) {
+                    GlobalVariable[i].source = '\0';
+                }
+                if(GlobalVariable[i].variableType == VariableType.v_float) {
+                    GlobalVariable[i].source = 0.0f;
+                }
+                if(GlobalVariable[i].variableType == VariableType.v_string) {
+                    GlobalVariable[i].source = string.Empty;
+                }
+            }
+        }
+
         string enc = encscript.Replace("\n", " ").Replace("\t", " ");
 		while(enc.Contains("  ")) {
-			enc.Replace("  ", " ");
+            enc = enc.Replace("  ", " ");
 		}
 		linescript = enc.Replace(";","@;@").Replace("{","@{@").Replace("}","@}@").Split('@');
 		for(int i = 0; i < linescript.Length; i++) {
 			if(linescript[i].EndsWith(" ")) {
-				linescript[i].Remove(linescript[i].Length - 1);
+                linescript[i] = linescript[i].Remove(linescript[i].Length - 1, 1);
 			}
 			if(linescript[i].StartsWith(" ")) {
-				linescript[i].Remove(0);
+                linescript[i] = linescript[i].Remove(0, 1);
 			}
-		}
+        }
+        linescript = linescript.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 
-		IndexRead = 0;
+
+        IndexRead = 0;
 		GlobalFunctionNames = new List<string>();
         GlobalFunctionIndex = new List<int>();
         int bracketsCount = 0;
@@ -111,7 +144,7 @@ public class ConsoleScript : WInteractable {
 		}
 		IndexRead = 0;
 
-		ExecuteFunction("Init",new List<Variable>());
+		StartCoroutine(ExecuteFunction("Init",new List<Variable>()));
 
         yield return null;
 
@@ -119,9 +152,19 @@ public class ConsoleScript : WInteractable {
     }
 
 	public IEnumerator OnScriptExecution () {
+        if(GlobalVariable.Count > 0) {
+            if(GlobalVariable[0].Id == "Zucc") {
+                //if(GlobalVariable[0].source == null) {
+                //    GlobalVariable[0].source = 0;
+                //}
+                //Debug.Log((bool)GlobalVariable[0].source);
+                Debug.Log((bool)GlobalVariable[0].source);
+                //Debug.Log((float)GlobalVariable[0].source);
+            }
+        }
         IndexRead = 0;
 		LocalVariable = new List<Variable>();
-		ExecuteFunction("Update",new List<Variable>());
+		StartCoroutine(ExecuteFunction("Update",new List<Variable>()));
 
         yield return null;
 	}
@@ -131,8 +174,8 @@ public class ConsoleScript : WInteractable {
         int DeclarationLine = -1;
 
         for(int i = 0; i < linescript.Length; i++) {
-            if(FunctionName == linescript[i]) {
-                DeclarationLine = 1;
+            if(FunctionName == GetIndexTextSeparatedByUnothorizedChar(linescript[i],1)) {
+                DeclarationLine = i;
             }
         }
 
@@ -141,7 +184,6 @@ public class ConsoleScript : WInteractable {
             string[] Parameters = GetParameters(linescript[DeclarationLine]).Split(',');
             for(int i = 0; i < Parameters.Length; i++) {
                 string[] SubParameters = Parameters[i].Split(' ');
-                SubParameters.ToList().Remove(string.Empty);
                 Result.Add(new Variable(SubParameters[1],Variable.StringToType(SubParameters[0]),null,new VariableParameters(false,VariableAccessType.v_readonly)));
             }
 
@@ -155,21 +197,29 @@ public class ConsoleScript : WInteractable {
         int LocalVariableCount = variableParameters.Count;
         LocalVariable.AddRange(variableParameters);
 
-        StartCoroutine(ExecuteCodeBlock(StartIndex+1));
+        StartCoroutine(ExecuteCodeBlock(StartIndex+2));
 
         LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount - 1, LocalVariableCount);
         yield return null;
     }
 
     public IEnumerator ExecuteFunction (string Name, List<Variable> variableParameters) {
-        int LocalVariableCount = variableParameters.Count;
-        LocalVariable.AddRange(variableParameters);
-
-        //TODO: Executing functions by name: Fix the script that finds the name
-        StartCoroutine(ExecuteCodeBlock(GlobalFunctionIndex[GlobalFunctionNames.IndexOf(Name)] + 1));
+        if(GlobalFunctionIndex.Count <= 0) {
+            yield break;
+        }
+        if(!GlobalFunctionNames.Contains(Name)) {
+            yield break;
+        }
+        int LocalVariableCount = 0;
+        if(variableParameters != null) {
+            LocalVariableCount = variableParameters.Count;
+            LocalVariable.AddRange(variableParameters);
+        }
+        
+        StartCoroutine(ExecuteCodeBlock(GlobalFunctionIndex[GlobalFunctionNames.IndexOf(Name)] + 2));
         FlowControlResult = 0;
 
-        LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount - 1, LocalVariableCount);
+        LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount, LocalVariableCount);
         yield return null;
     }
 
@@ -181,7 +231,21 @@ public class ConsoleScript : WInteractable {
         bool IfCommandFailedReset = false;
 
         for(int i = StartIndex; i < linescript.Length; i++) {
-            string FirstText = GetIndexTextSeparatedByUnothorizedChar(linescript[i],0);
+            if(string.IsNullOrEmpty(linescript[i])) {
+                continue;
+            }
+            if(linescript[i] == "}" && bracketsCount == 0) {
+                break;
+            } else if(linescript[i] == "}") {
+                bracketsCount--;
+                continue;
+            } else if(linescript[i] == "{") {
+                bracketsCount++;
+                continue;
+            } else if(linescript[i] == ";") {
+                continue;
+            }
+            string FirstText = GetIndexTextSeparatedByUnothorizedChar(linescript[i], 0);
             string SecondText = GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1);
             List<Variable> externalVariables = new List<Variable>();
             List<FunctionTemplate> externalFunctions = new List<FunctionTemplate>();
@@ -189,15 +253,7 @@ public class ConsoleScript : WInteractable {
             transmitter.AccessAllInteractableFunction(FirstText, out externalFunctions);
             //TODO: External Functions Calls
 
-            if(linescript[i] == "}" && bracketsCount == 0) {
-                break;
-            } else if(linescript[i] == "}") {
-                bracketsCount--;
-            } else if(linescript[i] == "{") {
-                bracketsCount++;
-            } else if(linescript[i] == ";") {
-                continue;
-            } else if(bracketsCount == 0) {
+            if(bracketsCount == 0) {
                 if(Keyword.ToList().Contains(FirstText)) {
                     //It's a keyword!
                     if(KeywordVariable.ToList().Contains(FirstText)) {
@@ -213,7 +269,7 @@ public class ConsoleScript : WInteractable {
                         if(FirstText == "if") {
                             bool result = (bool)SolveOperators(GetParameters(linescript[i])).source;
                             if(result) {
-                                ExecuteCodeBlock(i + 1);
+                                StartCoroutine(ExecuteCodeBlock(i + 2));
                             } else {
                                 IfCommandFailed = true;
                                 IfCommandFailedReset = true;
@@ -223,14 +279,14 @@ public class ConsoleScript : WInteractable {
                             if(GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1) == "if") {
                                 bool result = (bool)SolveOperators(GetParameters(linescript[i])).source;
                                 if(result) {
-                                    ExecuteCodeBlock(i + 1);
+                                    StartCoroutine(ExecuteCodeBlock(i + 2));
                                 } else {
                                     IfCommandFailed = true;
                                     IfCommandFailedReset = true;
                                 }
                             } else {
                                 if(IfCommandFailed) {
-                                    ExecuteCodeBlock(i + 1);
+                                    StartCoroutine(ExecuteCodeBlock(i + 2));
                                 }
                             }
                         }
@@ -240,7 +296,7 @@ public class ConsoleScript : WInteractable {
                                 if(!result) {
                                     break;
                                 } else {
-                                    ExecuteCodeBlock(i + 1);
+                                    StartCoroutine(ExecuteCodeBlock(i + 2));
                                     if(FlowControlResult != 0) {
                                         if(FlowControlResult == 1) {
                                             break;
@@ -256,26 +312,52 @@ public class ConsoleScript : WInteractable {
                         }
                         if(FirstText == "for") {
                             int ForVariableCount = 0;
-                            string InitScript = GetParameters(linescript[i]).Split(';')[0];
-                            string RepeatScript = GetParameters(linescript[i]).Split(';')[2];
-                            string CheckScript = GetParameters(linescript[i]).Split(';')[1];
+                            string Parameters = GetParameters(linescript[i]);
+                            int firstCutIndex = -1;
+                            int secondCutIndex = 0;
+                            int BracketsCountLocal = 0;
+                            for(int p = 0; p < Parameters.Length; p++) {
+                                if(Parameters[p] == '(') {
+                                    BracketsCountLocal++;
+                                }
+                                if(Parameters[p] == ')') {
+                                    BracketsCountLocal--;
+                                }
+                                if(Parameters[p] == ',' && BracketsCountLocal == 0) {
+                                    if(firstCutIndex == -1) {
+                                        firstCutIndex = p;
+                                    } else {
+                                        secondCutIndex = p;
+                                    }
+                                }
+                            }
+                            string InitScript = GetParameters(linescript[i]).Substring(0, firstCutIndex);
+                            string CheckScript = GetParameters(linescript[i]).Substring(firstCutIndex + 1, secondCutIndex - firstCutIndex - 1);
+                            string RepeatScript = GetParameters(linescript[i]).Substring(secondCutIndex + 1, Parameters.Length - secondCutIndex - 1);
 
                             if(KeywordVariable.ToList().Contains(GetIndexTextSeparatedByUnothorizedChar(InitScript,0))) {
                                 //Variable creation
                                 LocalVariable.Add(new Variable(
                                     GetIndexTextSeparatedByUnothorizedChar(InitScript, 1),
                                     Variable.StringToType(GetIndexTextSeparatedByUnothorizedChar(InitScript, 0)),
-                                    Variable.StringToObject(GetIndexTextSeparatedByUnothorizedChar(InitScript, 2), Variable.StringToType(GetIndexTextSeparatedByUnothorizedChar(InitScript, 1)))
+                                    Variable.StringToObject(GetIndexTextSeparatedByUnothorizedChar(InitScript, 2), Variable.StringToType(GetIndexTextSeparatedByUnothorizedChar(InitScript, 0)))
                                 ));
                                 ForVariableCount++;
                             }
 
+                            int ErrorCheck = 999;
                             while(true) {
+                                if(ErrorCheck > 0) {
+                                    ErrorCheck--;
+                                } else {
+                                    break;
+                                }
+
                                 bool result = (bool)SolveOperators(CheckScript).source;
                                 if(!result) {
                                     break;
                                 } else {
-                                    ExecuteCodeBlock(i + 1);
+                                    StartCoroutine(ExecuteCodeBlock(i + 2));
                                     if(FlowControlResult != 0) {
                                         if(FlowControlResult == 1) {
                                             break;
@@ -290,7 +372,7 @@ public class ConsoleScript : WInteractable {
                                 BasicLineExecution(RepeatScript);
                             }
 
-                            LocalVariable.RemoveRange(LocalVariable.Count-ForVariableCount-1,ForVariableCount);
+                            LocalVariable.RemoveRange(LocalVariable.Count-ForVariableCount,ForVariableCount);
                         }
                     } else if(KeywordFlowControl.ToList().Contains(FirstText)) {
                         //Flow actions
@@ -310,15 +392,7 @@ public class ConsoleScript : WInteractable {
                     }
                 } else if(GlobalFunctionNames.Contains(FirstText)) {
                     //It's a function
-                    List<Variable> FunctionParameters = new List<Variable>();
-
-                    //Handle function parameters
-                    FunctionParameters = GetFunctionParametersTemplate(FirstText);
-                    for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
-                        FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
-                    }
-
-                    StartCoroutine(ExecuteFunction(SecondText,FunctionParameters));
+                    StartCoroutine(ExecuteFunction(FirstText, GetFunctionPreparedParameters(linescript[i], FirstText, GetFunctionParametersTemplate(FirstText))));
                     FlowControlResult = 0;
 
                 } else if(VariableNameID(GlobalVariable, FirstText) != -1) {
@@ -330,9 +404,9 @@ public class ConsoleScript : WInteractable {
                     } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
                         GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
                     } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
-                        GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                        GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i])).source;
                     } else {
-                        GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                        GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i])).source;
                     }
                 } else if(VariableNameID(LocalVariable, FirstText) != -1) {
                     //It's a local variable
@@ -343,9 +417,9 @@ public class ConsoleScript : WInteractable {
                     } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
                         LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
                     } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
-                        LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                        LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(linescript[i])).source;
                     } else {
-                        LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                        LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i])).source;
                     }
                 } else if(VariableNameID(externalVariables, SecondText) != -1) {
                     int VariableID = VariableNameID(externalVariables, SecondText);
@@ -355,22 +429,17 @@ public class ConsoleScript : WInteractable {
                     } else if(GetSignsAfterUnothorizedChar(linescript[i]) == "--") {
                         externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
                     } else if(linescript[i].Split(' ')[1].StartsWith("=")) {
-                        externalVariables[VariableID].source = SolveOperators(GetApplyParameters(linescript[i]));
+                        externalVariables[VariableID].source = SolveOperators(GetApplyParameters(linescript[i])).source;
                     } else {
-                        externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i]));
+                        externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + linescript[i].Split(' ')[1][0] + GetApplyParameters(linescript[i])).source;
                     }
                     transmitter.ApplyWriteInteractableVariables(SecondText, externalVariables);
                 } else if(FunctionTemplatesContains(externalFunctions, SecondText) != -1) {
                     //It's a function
                     List<Variable> FunctionParameters = new List<Variable>();
 
-                    //Handle function parameters
-                    FunctionParameters = GetFunctionParametersTemplate(FirstText);
-                    for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
-                        FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
-                    }
-
-                    transmitter.SendInteractableFunctionCall(FirstText,new FunctionCaller(SecondText, FunctionParameters));
+                    FunctionParameters = GetFunctionPreparedParameters(linescript[i], SecondText, transmitter.AccessSpecificInteractableFunction(FirstText, SecondText).Parameters);
+                    transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
                     FlowControlResult = 0;
 
                 }
@@ -393,12 +462,15 @@ public class ConsoleScript : WInteractable {
             }
 		}
 
-        LocalVariable.RemoveRange(LocalVariable.Count-LocalVariableCount-1,LocalVariableCount);
+        LocalVariable.RemoveRange(LocalVariable.Count-LocalVariableCount,LocalVariableCount);
 
         yield return null;
     }
 
     public void BasicLineExecution (string Line) {
+        if(string.IsNullOrEmpty(Line)) {
+            return;
+        }
         string FirstText = GetIndexTextSeparatedByUnothorizedChar(Line, 0);
         string SecondText = GetIndexTextSeparatedByUnothorizedChar(Line, 1);
         List<Variable> externalVariables = new List<Variable>();
@@ -415,22 +487,30 @@ public class ConsoleScript : WInteractable {
             } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
                 GlobalVariable[VariableID].source = ((float)GlobalVariable[VariableID].source + 1);
             } else if(Line.Split(' ')[1].StartsWith("=")) {
-                GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line));
+                GlobalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line)).source;
             } else {
-                GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+                GlobalVariable[VariableID].source = SolveOperators(GlobalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line)).source;
             }
         } else if(VariableNameID(LocalVariable, FirstText) != -1) {
             //It's a local variable
             int VariableID = VariableNameID(LocalVariable, FirstText);
 
             if(GetSignsAfterUnothorizedChar(Line) == "++") {
-                LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+                if(LocalVariable[VariableID].variableType == VariableType.v_int) {
+                    LocalVariable[VariableID].source = ((int)LocalVariable[VariableID].source + 1);
+                } else if(LocalVariable[VariableID].variableType == VariableType.v_float) {
+                    LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+                }
             } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
-                LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source + 1);
+                if(LocalVariable[VariableID].variableType == VariableType.v_int) {
+                    LocalVariable[VariableID].source = ((int)LocalVariable[VariableID].source - 1);
+                } else if(LocalVariable[VariableID].variableType == VariableType.v_float) {
+                    LocalVariable[VariableID].source = ((float)LocalVariable[VariableID].source - 1);
+                }
             } else if(Line.Split(' ')[1].StartsWith("=")) {
-                LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line));
+                LocalVariable[VariableID].source = SolveOperators(GetApplyParameters(Line)).source;
             } else {
-                LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+                LocalVariable[VariableID].source = SolveOperators(LocalVariable[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line)).source;
             }
         } else if(VariableNameID(externalVariables, FirstText) != -1) {
             //Get the connected interactable's dictonnairy of variables
@@ -442,19 +522,15 @@ public class ConsoleScript : WInteractable {
             } else if(GetSignsAfterUnothorizedChar(Line) == "--") {
                 externalVariables[VariableID].source = ((float)externalVariables[VariableID].source + 1);
             } else if(Line.Split(' ')[1].StartsWith("=")) {
-                externalVariables[VariableID].source = SolveOperators(GetApplyParameters(Line));
+                externalVariables[VariableID].source = SolveOperators(GetApplyParameters(Line)).source;
             } else {
-                externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line));
+                externalVariables[VariableID].source = SolveOperators(externalVariables[VariableID].Id + Line.Split(' ')[1][0] + GetApplyParameters(Line)).source;
             }
             transmitter.ApplyWriteInteractableVariables(FirstText, externalVariables);
         } else if(FunctionTemplatesContains(externalFunctions, SecondText) != -1) {
             List<Variable> FunctionParameters = new List<Variable>();
 
-            FunctionParameters = GetFunctionParametersTemplate(FirstText);
-            for(int p = 0; p < GetParameters(Line).Split(',').Length; p++) {
-                FunctionParameters[p].source = SolveOperators(GetParameters(Line).Split(',')[p]);
-            }
-
+            FunctionParameters = GetFunctionPreparedParameters(Line, SecondText, transmitter.AccessSpecificInteractableFunction(FirstText, SecondText).Parameters);
             transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
         }
     }
@@ -483,24 +559,33 @@ public class ConsoleScript : WInteractable {
 
     public string GetSignsAfterUnothorizedChar (string Line) {
         string Result = string.Empty;
+        bool HasDetectedOthorizedPart = false;
 
         for(int i = 0; i < Line.Length; i++) {
-            if(Line[i] == ' ') {
-                return Result;
-            }
-            if(!IsAllowedNameChar(Line[i])) {
-                Result += Line[i];
+            if(!HasDetectedOthorizedPart) {
+                if(IsAllowedNameChar(Line[i])) {
+                    HasDetectedOthorizedPart = true;
+                }
+            } else {
+                if(Line[i] == ' ') {
+                    return Result;
+                }
+                if(!IsAllowedNameChar(Line[i])) {
+                    Result += Line[i];
+                }
             }
         }
         return Result;
     }
 
     public string GetIndexTextSeparatedByUnothorizedChar (string Line, int Index) {
-        string Result = string.Empty;
-        string[] subResult = Result.Split(UnothorizedChar.ToCharArray());
-        subResult.ToList().Remove(string.Empty);
-
-        return subResult[Index];
+        string[] subResult = Line.Split(UnothorizedChar.ToCharArray());
+        subResult = subResult.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+        if(Index < subResult.Length) {
+            return subResult[Index];
+        } else {
+            return null;
+        }
     }
 
     public string GetParameters (string Line) {
@@ -509,16 +594,20 @@ public class ConsoleScript : WInteractable {
         int BracketsCount = 0;
 
         for(int i = 0; i < Line.Length; i++) {
-            if(ParametersDetected) {
-                Result += Line[i];
-            } else if(Line[i] == '(') {
+            if(Line[i] == '(') {
                 BracketsCount++;
                 ParametersDetected = true;
+                if(BracketsCount == 1) {
+                    continue;
+                }
             } else if(Line[i] == ')') {
                 BracketsCount--;
                 if(BracketsCount == 0) {
                     break;
                 }
+            }
+            if(ParametersDetected) {
+                Result += Line[i];
             }
         }
         return Result;
@@ -551,11 +640,18 @@ public class ConsoleScript : WInteractable {
         //Find an other chunk
         //Repeat until there's no chunk remaining
 
-        int readingIndex = 0;
-        int endIndex = SolveList.Count-1;
         List<SolveElement> tempSolveElement;
 
+        int ErrorCheck = 999;
         while(SolveList.Count > 1) {
+            int readingIndex = 0;
+            int endIndex = SolveList.Count - 1;
+
+            if(ErrorCheck > 0) {
+                ErrorCheck--;
+            } else {
+                break;
+            }
             //Searching chunk
             if(SolveList.Contains(new SolveElement(SolveElementType.v_closebrackets)) || SolveList.Contains(new SolveElement(SolveElementType.v_openbrackets))) {
                 //Mulitple chunks found, find the first one
@@ -574,13 +670,12 @@ public class ConsoleScript : WInteractable {
 
                 tempSolveElement = SolveList.GetRange(readingIndex, endIndex-readingIndex);
             }
-
-            SolveElement res = SolveChunk(SolveList.GetRange(readingIndex, endIndex - readingIndex));
-            SolveList.RemoveRange(readingIndex, endIndex - readingIndex);
+            SolveElement res = SolveChunk(SolveList.GetRange(readingIndex, endIndex - readingIndex + 1));
+            SolveList.RemoveRange(readingIndex, endIndex - readingIndex + 1);
             SolveList.Insert(readingIndex, res);
         }
 
-        if(SolveList[0].type == SolveElementType.v_variable) {
+        if(SolveList[0].type == SolveElementType.v_variable) { //TODO: Retunrs empty solve list
             return SolveList[0].subVariable;
         } else {
             return null;
@@ -602,14 +697,21 @@ public class ConsoleScript : WInteractable {
 
         List<SolveElement> res = solveElements;
 
+        int ErrorCheck = 999;
         while(res.Count > 1) {
+            if(ErrorCheck > 0) {
+                ErrorCheck--;
+            } else {
+                break;
+            }
+
             int index = -1;
 
             if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNot))) {
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNot));
 
                 dynamic result = res[index + 1].subVariable.source;
-                result = !result;
+                result = ~result;
 
                 res[index + 1].subVariable.source = result;
                 
@@ -620,7 +722,7 @@ public class ConsoleScript : WInteractable {
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_not));
 
                 dynamic result = res[index + 1].subVariable.source;
-                result = ~result;
+                result = !result;
 
                 res[index + 1].subVariable.source = result;
                 
@@ -632,10 +734,10 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_multiply));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) < index) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) != -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide));
                 }
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) < index) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) != -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo));
                 }
             } else
@@ -643,7 +745,7 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_plus));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) < index) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) != -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus));
                 }
             } else
@@ -651,15 +753,31 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyRightShift));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) < index) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) != -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift));
+                }
+            } else
+            if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_smaller)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) ||
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) || 
+                res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual))) {
+
+                index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smaller));
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) != -1) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual));
+                }
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) != -1) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater));
+                }
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) != -1) {
+                    index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual));
                 }
             } else
             if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_equal)) ||
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_equal));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) < index) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) != -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual));
                 }
             } else
@@ -679,13 +797,17 @@ public class ConsoleScript : WInteractable {
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_or));
             }
 
-            if(index != -1) {
-                SolveElement solveElement = SolveOperation(res[index-1].subVariable,res[index].operatorType,res[index+1].subVariable);
+            if(index != -1 && res.Count > 1) {
+                SolveElement solveElement = SolveOperation(
+                    res[index - 1].subVariable,
+                    res[index].operatorType,
+                    res[index + 1].subVariable
+                    );
 
-                res.Insert(index+2, solveElement);
-                res.RemoveAt(index+1);
+                res.Insert(index + 2, solveElement);
+                res.RemoveAt(index + 1);
                 res.RemoveAt(index);
-                res.RemoveAt(index-1);
+                res.RemoveAt(index - 1);
             }
         }
 
@@ -698,15 +820,18 @@ public class ConsoleScript : WInteractable {
 
     List<SolveElement> SolveCompileLine (string Line) {
         List<SolveElement> Result = new List<SolveElement>();
-
         bool StartWordRead = true;
         string CurrentWord = "";
         bool IsNumberDecimal = false;
-        int SeekingType = 0;
-        for(int i = 0; i < Line.Length; i++) {
-            if(StartWordRead) {
+        int SeekingType = -1;
+
+        for(int i = 0; i <= Line.Length; i++) {
+            if(StartWordRead && i < Line.Length) {
+                SeekingType = -1;
                 StartWordRead = false;
-                if(char.IsDigit(Line[i])) {
+                if(Line[i] == ' ') {
+                    StartWordRead = true;
+                } else if(NumberChars.Contains(Line[i]) && Line[i] != '.') {
                     //Number
                     CurrentWord += Line[i];
                     SeekingType = 0;
@@ -716,7 +841,7 @@ public class ConsoleScript : WInteractable {
                 } else if(Line[i] == ')') {
                     Result.Add(new SolveElement(SolveElementType.v_closebrackets));
                     StartWordRead = true;
-                } else if(char.IsLetter(Line[i])) {
+                } else if(AllowedChars.Contains(Line[i])) {
                     //Keyword or variable
                     CurrentWord += Line[i];
                     SeekingType = 1;
@@ -724,8 +849,10 @@ public class ConsoleScript : WInteractable {
                     //Operator
                     CurrentWord += Line[i];
                     SeekingType = 2;
+                } else {
+                    StartWordRead = true;
                 }
-            } else {
+            } else if(i < Line.Length) {
                 if(SeekingType == 0) {
                     if(NumberChars.Contains(Line[i])) {
                         if(Line[i] == '.') {
@@ -733,14 +860,15 @@ public class ConsoleScript : WInteractable {
                         }
                         CurrentWord += Line[i];
                     } else {
-                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
                         if(IsNumberDecimal) {
                             Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord))));
                         } else {
                             Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
                         }
 
-                        i--;
+                        if(Line[i] != ' ') {
+                            i--;
+                        } 
                         StartWordRead = true;
                         CurrentWord = string.Empty;
                         IsNumberDecimal = false;
@@ -780,6 +908,7 @@ public class ConsoleScript : WInteractable {
 
                                 Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(GlobalVariable[VariableID].variableType, GlobalVariable[VariableID].source)));
                             } else if(VariableNameID(LocalVariable, CurrentWord) != -1) {
+                                Debug.Log("Gayy");
                                 //It's a local variable
                                 int VariableID = VariableNameID(LocalVariable, CurrentWord);
 
@@ -792,17 +921,81 @@ public class ConsoleScript : WInteractable {
                             }
                         }
 
-                        i--;
+                        if(Line[i] != ' ') {
+                            i--;
+                        }
                         StartWordRead = true;
                         CurrentWord = string.Empty;
                         IsNumberDecimal = false;
                     }
                 } else if(SeekingType == 2) {
-                    Result.Add(new SolveElement(SolveElementType.v_operator,SolveElement.StringToOperator(CurrentWord)));
+                    if(OperatorChars.Contains(Line[i])) {
+                        CurrentWord += Line[i];
+                    } else {
+                        Result.Add(new SolveElement(SolveElementType.v_operator, SolveElement.StringToOperator(CurrentWord)));
+                        if(Line[i] != ' ') {
+                            i--;
+                        }
+                        StartWordRead = true;
+                        CurrentWord = string.Empty;
+                        IsNumberDecimal = false;
+                    }
+                }
+            } else {
+                if(SeekingType == 0) {
+                    if(IsNumberDecimal) {
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord))));
+                    } else {
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
+                    }
+                } else if(SeekingType == 1) {
+                    if(CurrentWord == "false") {
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_bool, false)));
+                    } else if(CurrentWord == "true") {
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_bool, true)));
+                    } else {
+                        //Probably a variable. Check local, global and input
+                        List<Variable> externalVariables = new List<Variable>();
+                        transmitter.AccessAllInteractableVariables(CurrentWord, out externalVariables);
+
+                        if(GlobalFunctionNames.Contains(CurrentWord)) {
+                            //It's a function
+                            List<Variable> FunctionParameters = new List<Variable>();
+
+                            //Handle function parameters
+                            FunctionParameters = GetFunctionParametersTemplate(CurrentWord);
+                            for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
+                                FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
+                            }
+
+                            StartCoroutine(ExecuteFunction(i, FunctionParameters));
+
+                            SubVariable subVariable = SolveOperators(FlowControlOutput);
+                            Result.Add(new SolveElement(SolveElementType.v_variable, subVariable));
+                            FlowControlResult = 0;
+
+                        } else if(VariableNameID(GlobalVariable, CurrentWord) != -1) {
+                            //It's a global variable
+                            int VariableID = VariableNameID(GlobalVariable, CurrentWord);
+
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(GlobalVariable[VariableID].variableType, GlobalVariable[VariableID].source)));
+                        } else if(VariableNameID(LocalVariable, CurrentWord) != -1) {
+                            //It's a local variable
+                            int VariableID = VariableNameID(LocalVariable, CurrentWord);
+
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(LocalVariable[VariableID].variableType, LocalVariable[VariableID].source)));
+                        } else if(VariableNameID(externalVariables, CurrentWord) != -1) {
+                            //Get the connected interactable's dictonnairy of variables
+                            int VariableID = VariableNameID(externalVariables, CurrentWord);
+
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(externalVariables[VariableID].variableType, externalVariables[VariableID].source)));
+                        }
+                    }
+                } else if(SeekingType == 2) {
+                    Result.Add(new SolveElement(SolveElementType.v_operator, SolveElement.StringToOperator(CurrentWord)));
                 }
             }
         }
-
         return Result;
     }
 
@@ -828,7 +1021,66 @@ public class ConsoleScript : WInteractable {
 		return AllowedChars.Contains(Char.ToString());
 	}
 
-	override public void OnInteraction () {
-		//Call the player code to start the ui-console?
-	}
+    List<Variable> GetFunctionPreparedParameters (string Line, string FunctionName, List<Variable> template) {
+        List<Variable> FunctionParameters = new List<Variable>();
+        List<string> Parameters = new List<string>();
+        string ParamsLine = GetParameters(Line);
+        string StoringLine = string.Empty;
+        int ParamsBCount = 0;
+
+        //Handle function parameters
+        FunctionParameters = template; //GetFunctionParametersTemplate(FunctionName)
+        for(int p = 0; p < ParamsLine.Length; p++) {
+            if(ParamsLine[p] == '(') {
+                ParamsBCount++;
+            } else if(ParamsLine[p] == ')') {
+                ParamsBCount++;
+            } else if(ParamsLine[p] == ',') {
+                if(ParamsBCount == 0) {
+                    Parameters.Add(StoringLine);
+                    StoringLine = string.Empty;
+                } else {
+                    StoringLine += ParamsLine[p];
+                }
+            } else {
+                StoringLine += ParamsLine[p];
+            }
+        }
+        for(int p = 0; p < Parameters.Count; p++) {
+            FunctionParameters[p].source = SolveOperators(Parameters[p]);
+        }
+
+        return FunctionParameters;
+    }
+
+    List<Variable> GetFunctionPreparedParameters (string Line, string FunctionName, List<VariableTemplate> template) {
+        List<Variable> FunctionParameters = new List<Variable>();
+        List<string> Parameters = new List<string>();
+        string ParamsLine = GetParameters(Line);
+        string StoringLine = string.Empty;
+        int ParamsBCount = 0;
+
+        //Handle function parameters
+        for(int p = 0; p < ParamsLine.Length; p++) {
+            if(ParamsLine[p] == '(') {
+                ParamsBCount++;
+            } else if(ParamsLine[p] == ')') {
+                ParamsBCount++;
+            } else if(ParamsLine[p] == ',') {
+                if(ParamsBCount == 0) {
+                    Parameters.Add(StoringLine);
+                    StoringLine = string.Empty;
+                } else {
+                    StoringLine += ParamsLine[p];
+                }
+            } else {
+                StoringLine += ParamsLine[p];
+            }
+        }
+        for(int p = 0; p < Parameters.Count; p++) {
+            FunctionParameters.Add(new Variable(template[p].Name, template[p].type,SolveOperators(Parameters[p])));
+        }
+
+        return FunctionParameters;
+    }
 }

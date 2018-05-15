@@ -16,7 +16,7 @@ public class ButtonScript : WInteractable {
 		GlobalVariable.Add(new Variable("IsButtonPress",VariableType.v_bool,false,new VariableParameters(true,VariableAccessType.v_readonly)));
 	}
 
-	override public void OnInteraction() {
+	override public void OnInteraction(Player player) {
 		if(Input.GetMouseButtonDown(1)) {
 			ButtonDown = true;
 		}

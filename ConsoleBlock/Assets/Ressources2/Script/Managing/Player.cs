@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityStandardAssets.Characters.FirstPerson;
 
 public class Player : MonoBehaviour {
 
     public Rigidbody playerRigidbody;
+    public RigidbodyFirstPersonController controller;
     public bool IsUICurrentlyOpened = false;
 
     public UIManager uiManager;
@@ -17,13 +19,16 @@ public class Player : MonoBehaviour {
 
     WInteractable linksource;
 
+    void Start () {
+
+    }
+
     void Update () {
         if(IsUICurrentlyOpened) {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
-
-            if(InputControl.GetInputDown(InputControl.InputType.Close)) {
-                CloseUI();
+            if(controller.enabled == true) {
+                controller.enabled = false;
             }
             return;
         }
@@ -41,6 +46,10 @@ public class Player : MonoBehaviour {
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+        if(controller.enabled == false) {
+            controller.enabled = true;
+        }
+
         buildingManager.PlaceHolderClear();
         if(!SpecificTypeModeActive && SpecificTypeModeOverlay.enabled) {
             SpecificTypeModeOverlay.enabled = false;
@@ -85,6 +94,10 @@ public class Player : MonoBehaviour {
                         InputControl.GetInput(InputControl.InputType.MouseSecondairyPress),
                         InputControl.GetInputUp(InputControl.InputType.MouseSecondairyPress)
                     );
+                } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Interaction) {
+                    if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress)) {
+                        hit.collider.GetComponent<WInteractableCaller>().Call(this);
+                    }
                 }
             } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !InputControl.GetInput(InputControl.InputType.Building)) {
                 if(hit.collider.tag == "Interactable") {
