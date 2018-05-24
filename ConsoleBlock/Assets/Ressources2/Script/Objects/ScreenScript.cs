@@ -73,13 +73,15 @@ public class ScreenScript : WInteractable {
 
     override public void Update () {
         for(int i = 0; i < FunctionCall.Count; i++) {
+            FunctionCaller fc = FunctionCall[0];
+            FunctionCall.RemoveAt(0);
             int pr = i;
             i = 0;
-            if(FunctionCall[i].Name == "Fill") {
+            if(fc.Name == "Fill") {
                 Color color = new Color {
-                    r = (float)FunctionCall[i].parameters[0].source,
-                    g = (float)FunctionCall[i].parameters[1].source,
-                    b = (float)FunctionCall[i].parameters[2].source,
+                    r = (float)fc.parameters[0].source,
+                    g = (float)fc.parameters[1].source,
+                    b = (float)fc.parameters[2].source,
                     a = 1f
                 };
 
@@ -91,21 +93,21 @@ public class ScreenScript : WInteractable {
                 display.SetPixels(colors);
                 UpdateScreen();
             } else
-            if(FunctionCall[i].Name == "SetColor") {
+            if(fc.Name == "SetColor") {
                 CurrentColor = new Color {
-                    r = (float)FunctionCall[i].parameters[0].source,
-                    g = (float)FunctionCall[i].parameters[1].source,
-                    b = (float)FunctionCall[i].parameters[2].source,
+                    r = (float)fc.parameters[0].source,
+                    g = (float)fc.parameters[1].source,
+                    b = (float)fc.parameters[2].source,
                     a = 1f
                 };
             } else
-            if(FunctionCall[i].Name == "SetTextCursor") {
-                TextCursorX = (int)FunctionCall[i].parameters[0].source;
-                TextCursorY = (int)FunctionCall[i].parameters[1].source;
+            if(fc.Name == "SetTextCursor") {
+                TextCursorX = (int)fc.parameters[0].source;
+                TextCursorY = (int)fc.parameters[1].source;
             } else
-            if(FunctionCall[i].Name == "DrawText") {
+            if(fc.Name == "DrawText") {
                 Color[] colors = display.GetPixels();
-                string text = (string)FunctionCall[i].parameters[0].source;
+                string text = (string)fc.parameters[0].source;
                 for(int t = 0; t < text.Length; t++) {
                     byte b = (byte)(Converter.IndexOf(char.ToUpper(text[t])));
                     if(b > 127) {
@@ -129,18 +131,18 @@ public class ScreenScript : WInteractable {
                 display.SetPixels(colors);
                 UpdateScreen();
             } else
-            if(FunctionCall[i].Name == "DrawPixel") {
+            if(fc.Name == "DrawPixel") {
                 display.SetPixel(
-                    (int)FunctionCall[i].parameters[0].source,
-                    display.height-(int)FunctionCall[i].parameters[1].source,
+                    (int)fc.parameters[0].source,
+                    display.height-(int)fc.parameters[1].source,
                     CurrentColor
                 );
                 UpdateScreen();
             } else
-            if(FunctionCall[i].Name == "DrawFilledRect") {
+            if(fc.Name == "DrawFilledRect") {
                 Color[] colors = display.GetPixels();
-                for(int x = (int)FunctionCall[i].parameters[0].source; x < (int)FunctionCall[i].parameters[2].source; x++) {
-                    for(int y = (int)FunctionCall[i].parameters[1].source; y < (int)FunctionCall[i].parameters[3].source; y++) {
+                for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
+                    for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
                         if(x < display.width) {
                             colors[x + (display.height - y) * display.width] = CurrentColor;
                         }
@@ -149,11 +151,11 @@ public class ScreenScript : WInteractable {
                 display.SetPixels(colors);
                 UpdateScreen();
             } else
-            if(FunctionCall[i].Name == "DrawRect") {
+            if(fc.Name == "DrawRect") {
                 Color[] colors = display.GetPixels();
-                for(int x = (int)FunctionCall[i].parameters[0].source; x < (int)FunctionCall[i].parameters[2].source; x++) {
-                    for(int y = (int)FunctionCall[i].parameters[1].source; y < (int)FunctionCall[i].parameters[3].source; y++) {
-                        if(x == (int)FunctionCall[i].parameters[0].source || x == (int)FunctionCall[i].parameters[2].source - 1 || y == (int)FunctionCall[i].parameters[1].source || y == (int)FunctionCall[i].parameters[3].source - 1) {
+                for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
+                    for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
+                        if(x == (int)fc.parameters[0].source || x == (int)fc.parameters[2].source - 1 || y == (int)fc.parameters[1].source || y == (int)fc.parameters[3].source - 1) {
                             if(x < display.width) {
                                 colors[x + (display.height - y) * display.width] = CurrentColor;
                             }
@@ -163,12 +165,12 @@ public class ScreenScript : WInteractable {
                 display.SetPixels(colors);
                 UpdateScreen();
             } else
-            if(FunctionCall[i].Name == "DrawLine") {
+            if(fc.Name == "DrawLine") {
                 display.SetPixels(DrawLine(
-                    (int)FunctionCall[i].parameters[0].source,
-                    (int)FunctionCall[i].parameters[1].source,
-                    (int)FunctionCall[i].parameters[2].source,
-                    (int)FunctionCall[i].parameters[3].source,
+                    (int)fc.parameters[0].source,
+                    (int)fc.parameters[1].source,
+                    (int)fc.parameters[2].source,
+                    (int)fc.parameters[3].source,
                     display.GetPixels(),
                     display.width,
                     display.height,
@@ -176,7 +178,6 @@ public class ScreenScript : WInteractable {
                 ));
                 UpdateScreen();
             }
-            FunctionCall.RemoveAt(0);
             i = pr;
         }
 

@@ -167,14 +167,30 @@ public class SubVariable {
         dynamic t2 = SecondVariable.source;
 
         if(operatorType == OperatorType.v_plus) {
+            //float int becomes float
+            if(this.variableType == VariableType.v_float || SecondVariable.variableType == VariableType.v_float) {
+                res.variableType = VariableType.v_float;
+            }
             res.source = t1 + t2;
         } else if(operatorType == OperatorType.v_minus) {
+            if(this.variableType == VariableType.v_float || SecondVariable.variableType == VariableType.v_float) {
+                res.variableType = VariableType.v_float;
+            }
             res.source = t1 - t2;
         } else if(operatorType == OperatorType.v_multiply) {
+            if(this.variableType == VariableType.v_float || SecondVariable.variableType == VariableType.v_float) {
+                res.variableType = VariableType.v_float;
+            }
             res.source = t1 * t2;
         } else if(operatorType == OperatorType.v_divide) {
+            if(this.variableType == VariableType.v_float || SecondVariable.variableType == VariableType.v_float) {
+                res.variableType = VariableType.v_float;
+            }
             res.source = t1 / t2;
         } else if(operatorType == OperatorType.v_modulo) {
+            if(this.variableType == VariableType.v_float || SecondVariable.variableType == VariableType.v_float) {
+                res.variableType = VariableType.v_float;
+            }
             res.source = t1 % t2;
         } else if(operatorType == OperatorType.v_greater) {
             res.variableType = VariableType.v_bool;

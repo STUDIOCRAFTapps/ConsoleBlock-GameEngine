@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System.Globalization;
 
 public class ConsoleScript : WInteractable {
 
@@ -19,7 +20,7 @@ public class ConsoleScript : WInteractable {
 
 	string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
     string NumberChars = "0123456789.";
-    string UnothorizedChar = "+-/*%&|^!~=<>? {}()[],\t;\n";
+    string UnothorizedChar = "+-/*%&|^!~=<>? {}()[].,\t;\n";
     string OperatorChars = ".+-/*%&|^!~<>?=";
 	string DelimitatorChars = " {}()[],\t;";
 	string LineDelimitatorChars = "{};";
@@ -70,11 +71,11 @@ public class ConsoleScript : WInteractable {
 
     override public void Update () {
         for(int i = 0; i < FunctionCall.Count; i++) {
-            if(GlobalFunctionNames.Contains(FunctionCall[i].Name)) {
-                StartCoroutine(ExecuteFunction(FunctionCall[i].Name, FunctionCall[i].parameters));
-                FunctionCall.Remove(FunctionCall[i]);
-            } else {
-                FunctionCall.Remove(FunctionCall[i]);
+            FunctionCaller fc = FunctionCall[0];
+            FunctionCall.RemoveAt(0);
+
+            if(GlobalFunctionNames.Contains(fc.Name)) {
+                StartCoroutine(ExecuteFunction(fc.Name, fc.parameters));
             }
         }
         StartCoroutine(OnScriptExecution());
@@ -158,7 +159,6 @@ public class ConsoleScript : WInteractable {
                 //    GlobalVariable[0].source = 0;
                 //}
                 //Debug.Log((bool)GlobalVariable[0].source);
-                Debug.Log((bool)GlobalVariable[0].source);
                 //Debug.Log((float)GlobalVariable[0].source);
             }
         }
@@ -197,7 +197,7 @@ public class ConsoleScript : WInteractable {
         int LocalVariableCount = variableParameters.Count;
         LocalVariable.AddRange(variableParameters);
 
-        StartCoroutine(ExecuteCodeBlock(StartIndex+2));
+        StartCoroutine(ExecuteCodeBlock(StartIndex+2, variableParameters));
 
         LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount - 1, LocalVariableCount);
         yield return null;
@@ -211,19 +211,18 @@ public class ConsoleScript : WInteractable {
             yield break;
         }
         int LocalVariableCount = 0;
-        if(variableParameters != null) {
-            LocalVariableCount = variableParameters.Count;
-            LocalVariable.AddRange(variableParameters);
-        }
         
-        StartCoroutine(ExecuteCodeBlock(GlobalFunctionIndex[GlobalFunctionNames.IndexOf(Name)] + 2));
+        StartCoroutine(ExecuteCodeBlock(GlobalFunctionIndex[GlobalFunctionNames.IndexOf(Name)] + 2, variableParameters));
         FlowControlResult = 0;
 
-        LocalVariable.RemoveRange(LocalVariable.Count - LocalVariableCount, LocalVariableCount);
+        //TODO: Code block should delete local var too -> for, if, wshile
         yield return null;
     }
 
-    public IEnumerator ExecuteCodeBlock (int StartIndex) {
+    public IEnumerator ExecuteCodeBlock (int StartIndex, List<Variable> temporaryLocalVar) {
+        if(temporaryLocalVar != null) {
+            LocalVariable.AddRange(temporaryLocalVar);
+        }
 		int LocalVariableCount = 0;
 		int bracketsCount = 0;
 
@@ -269,7 +268,7 @@ public class ConsoleScript : WInteractable {
                         if(FirstText == "if") {
                             bool result = (bool)SolveOperators(GetParameters(linescript[i])).source;
                             if(result) {
-                                StartCoroutine(ExecuteCodeBlock(i + 2));
+                                StartCoroutine(ExecuteCodeBlock(i + 2, null));
                             } else {
                                 IfCommandFailed = true;
                                 IfCommandFailedReset = true;
@@ -279,14 +278,14 @@ public class ConsoleScript : WInteractable {
                             if(GetIndexTextSeparatedByUnothorizedChar(linescript[i], 1) == "if") {
                                 bool result = (bool)SolveOperators(GetParameters(linescript[i])).source;
                                 if(result) {
-                                    StartCoroutine(ExecuteCodeBlock(i + 2));
+                                    StartCoroutine(ExecuteCodeBlock(i + 2, null));
                                 } else {
                                     IfCommandFailed = true;
                                     IfCommandFailedReset = true;
                                 }
                             } else {
                                 if(IfCommandFailed) {
-                                    StartCoroutine(ExecuteCodeBlock(i + 2));
+                                    StartCoroutine(ExecuteCodeBlock(i + 2, null));
                                 }
                             }
                         }
@@ -296,7 +295,7 @@ public class ConsoleScript : WInteractable {
                                 if(!result) {
                                     break;
                                 } else {
-                                    StartCoroutine(ExecuteCodeBlock(i + 2));
+                                    StartCoroutine(ExecuteCodeBlock(i + 2, null));
                                     if(FlowControlResult != 0) {
                                         if(FlowControlResult == 1) {
                                             break;
@@ -357,7 +356,7 @@ public class ConsoleScript : WInteractable {
                                 if(!result) {
                                     break;
                                 } else {
-                                    StartCoroutine(ExecuteCodeBlock(i + 2));
+                                    StartCoroutine(ExecuteCodeBlock(i + 2, null));
                                     if(FlowControlResult != 0) {
                                         if(FlowControlResult == 1) {
                                             break;
@@ -441,7 +440,6 @@ public class ConsoleScript : WInteractable {
                     FunctionParameters = GetFunctionPreparedParameters(linescript[i], SecondText, transmitter.AccessSpecificInteractableFunction(FirstText, SecondText).Parameters);
                     transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
                     FlowControlResult = 0;
-
                 }
 
                 //If function;
@@ -463,6 +461,9 @@ public class ConsoleScript : WInteractable {
 		}
 
         LocalVariable.RemoveRange(LocalVariable.Count-LocalVariableCount,LocalVariableCount);
+        if(temporaryLocalVar != null) {
+            LocalVariable.RemoveRange(LocalVariable.Count- temporaryLocalVar.Count, temporaryLocalVar.Count);
+        }
 
         yield return null;
     }
@@ -734,10 +735,10 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_multiply));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_divide));
                 }
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_modulo));
                 }
             } else
@@ -745,7 +746,7 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_plus));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_minus));
                 }
             } else
@@ -753,7 +754,7 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyRightShift));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyLeftShift));
                 }
             } else
@@ -763,13 +764,13 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smaller));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_smallerEqual));
                 }
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greater));
                 }
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_greaterEqual));
                 }
             } else
@@ -777,7 +778,7 @@ public class ConsoleScript : WInteractable {
                 res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual))) {
 
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_equal));
-                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) != -1) {
+                if(res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) < index && res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual)) != -1 || index == -1) {
                     index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_notEqual));
                 }
             } else
@@ -861,7 +862,7 @@ public class ConsoleScript : WInteractable {
                         CurrentWord += Line[i];
                     } else {
                         if(IsNumberDecimal) {
-                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord))));
+                            Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord, CultureInfo.InvariantCulture))));
                         } else {
                             Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
                         }
@@ -874,7 +875,7 @@ public class ConsoleScript : WInteractable {
                         IsNumberDecimal = false;
                     }
                 } else if(SeekingType == 1) {
-                    if(AllowedChars.Contains(Line[i])) {
+                    if(AllowedChars.Contains(Line[i]) || Line[i] == '.') {
                         CurrentWord += Line[i];
                     } else {
                         if(CurrentWord == "false") {
@@ -884,19 +885,15 @@ public class ConsoleScript : WInteractable {
                         } else {
                             //Probably a variable. Check local, global and input
                             List<Variable> externalVariables = new List<Variable>();
-                            transmitter.AccessAllInteractableVariables(CurrentWord, out externalVariables);
+                            if(CurrentWord.Contains(".")) {
+                                transmitter.AccessAllInteractableVariables(CurrentWord.Split('.')[0], out externalVariables);
+                            }
 
                             if(GlobalFunctionNames.Contains(CurrentWord)) {
                                 //It's a function
                                 List<Variable> FunctionParameters = new List<Variable>();
 
-                                //Handle function parameters
-                                FunctionParameters = GetFunctionParametersTemplate(CurrentWord);
-                                for(int p = 0; p < GetParameters(linescript[i]).Split(',').Length; i++) {
-                                    FunctionParameters[p].source = SolveOperators(GetParameters(linescript[i]).Split(',')[p]);
-                                }
-
-                                StartCoroutine(ExecuteFunction(i, FunctionParameters));
+                                StartCoroutine(ExecuteFunction(i, GetFunctionPreparedParameters(linescript[i], CurrentWord, GetFunctionParametersTemplate(CurrentWord))));
 
                                 SubVariable subVariable = SolveOperators(FlowControlOutput);
                                 Result.Add(new SolveElement(SolveElementType.v_variable, subVariable));
@@ -908,14 +905,13 @@ public class ConsoleScript : WInteractable {
 
                                 Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(GlobalVariable[VariableID].variableType, GlobalVariable[VariableID].source)));
                             } else if(VariableNameID(LocalVariable, CurrentWord) != -1) {
-                                Debug.Log("Gayy");
                                 //It's a local variable
                                 int VariableID = VariableNameID(LocalVariable, CurrentWord);
 
                                 Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(LocalVariable[VariableID].variableType, LocalVariable[VariableID].source)));
-                            } else if(VariableNameID(externalVariables, CurrentWord) != -1) {
+                            } else if(VariableNameID(externalVariables, CurrentWord.Split('.')[1]) != -1) {
                                 //Get the connected interactable's dictonnairy of variables
-                                int VariableID = VariableNameID(externalVariables, CurrentWord);
+                                int VariableID = VariableNameID(externalVariables, CurrentWord.Split('.')[1]);
 
                                 Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(externalVariables[VariableID].variableType, externalVariables[VariableID].source)));
                             }
@@ -944,7 +940,7 @@ public class ConsoleScript : WInteractable {
             } else {
                 if(SeekingType == 0) {
                     if(IsNumberDecimal) {
-                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord))));
+                        Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_float, float.Parse(CurrentWord, CultureInfo.InvariantCulture))));
                     } else {
                         Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(VariableType.v_int, int.Parse(CurrentWord))));
                     }
@@ -956,7 +952,9 @@ public class ConsoleScript : WInteractable {
                     } else {
                         //Probably a variable. Check local, global and input
                         List<Variable> externalVariables = new List<Variable>();
-                        transmitter.AccessAllInteractableVariables(CurrentWord, out externalVariables);
+                        if(CurrentWord.Contains(".")) {
+                            transmitter.AccessAllInteractableVariables(CurrentWord.Split('.')[0], out externalVariables);
+                        }
 
                         if(GlobalFunctionNames.Contains(CurrentWord)) {
                             //It's a function
@@ -984,12 +982,18 @@ public class ConsoleScript : WInteractable {
                             int VariableID = VariableNameID(LocalVariable, CurrentWord);
 
                             Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(LocalVariable[VariableID].variableType, LocalVariable[VariableID].source)));
-                        } else if(VariableNameID(externalVariables, CurrentWord) != -1) {
+                        } else if(VariableNameID(externalVariables, CurrentWord.Split('.')[1]) != -1) {
                             //Get the connected interactable's dictonnairy of variables
-                            int VariableID = VariableNameID(externalVariables, CurrentWord);
+                            int VariableID = VariableNameID(externalVariables, CurrentWord.Split('.')[1]);
 
                             Result.Add(new SolveElement(SolveElementType.v_variable, new SubVariable(externalVariables[VariableID].variableType, externalVariables[VariableID].source)));
-                        }
+                        }/* else if(FunctionTemplatesContains(externalFunctions, CurrentWord.Split('.')[1]) != -1) {
+                            //It's a function
+                            List<Variable> FunctionParameters = new List<Variable>();
+
+                            FunctionParameters = GetFunctionPreparedParameters(linescript[i], CurrentWord.Split('.')[1], transmitter.AccessSpecificInteractableFunction(CurrentWord.Split('.')[0], CurrentWord.Split('.')[1]).Parameters);
+                            transmitter.SendInteractableFunctionCall(CurrentWord.Split('.')[0], new FunctionCaller(CurrentWord.Split('.')[1], FunctionParameters));
+                        }*/
                     }
                 } else if(SeekingType == 2) {
                     Result.Add(new SolveElement(SolveElementType.v_operator, SolveElement.StringToOperator(CurrentWord)));
@@ -1046,8 +1050,14 @@ public class ConsoleScript : WInteractable {
                 StoringLine += ParamsLine[p];
             }
         }
-        for(int p = 0; p < Parameters.Count; p++) {
-            FunctionParameters[p].source = SolveOperators(Parameters[p]);
+        if(Parameters.Count <= 0) {
+            if(FunctionParameters.Count > 0) {
+                FunctionParameters[0].source = SolveOperators(ParamsLine).source;
+            }
+        } else {
+            for(int p = 0; p < Parameters.Count; p++) {
+                FunctionParameters[p].source = SolveOperators(Parameters[p]).source;
+            }
         }
 
         return FunctionParameters;
@@ -1065,7 +1075,7 @@ public class ConsoleScript : WInteractable {
             if(ParamsLine[p] == '(') {
                 ParamsBCount++;
             } else if(ParamsLine[p] == ')') {
-                ParamsBCount++;
+                ParamsBCount--;
             } else if(ParamsLine[p] == ',') {
                 if(ParamsBCount == 0) {
                     Parameters.Add(StoringLine);
@@ -1077,8 +1087,10 @@ public class ConsoleScript : WInteractable {
                 StoringLine += ParamsLine[p];
             }
         }
+        Parameters.Add(StoringLine);
+        StoringLine = string.Empty;
         for(int p = 0; p < Parameters.Count; p++) {
-            FunctionParameters.Add(new Variable(template[p].Name, template[p].type,SolveOperators(Parameters[p])));
+            FunctionParameters.Add(new Variable(template[p].Name, template[p].type, SolveOperators(Parameters[p]).source));
         }
 
         return FunctionParameters;

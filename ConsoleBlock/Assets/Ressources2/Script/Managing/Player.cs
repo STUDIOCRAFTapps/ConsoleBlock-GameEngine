@@ -66,14 +66,6 @@ public class Player : MonoBehaviour {
         Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
         RaycastHit hit;
         if(Physics.Raycast(ray, out hit)) {
-
-            if(!SpecificTypeModeActive && SpecificTypeModeOverlay.enabled) {
-                SpecificTypeModeOverlay.enabled = false;
-            } else if(SpecificTypeModeActive && !SpecificTypeModeOverlay.enabled) {
-                SpecificTypeModeOverlay.enabled = true;
-            }
-
-
             if(hit.collider.GetComponent<WInteractableCaller>() != null) {
                 if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Transmition) {
                     if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.Link) {
@@ -82,9 +74,21 @@ public class Player : MonoBehaviour {
                             if(interactable.transmitter.sources.Contains(linksource)) {
                                 interactable.transmitter.sources.Remove(linksource);
                             } else {
-                                interactable.transmitter.sources.Add(linksource);
+                                if(linksource.transmitter.sources.Contains(interactable)) {
+                                    linksource.transmitter.sources.Remove(interactable);
+                                } else {
+                                    linksource.transmitter.sources.Add(interactable);
+                                    interactable.transmitter.sources.Add(linksource);
+                                }
+
                             }
-                            SpecificTypeModeActive = false;
+                        }
+                        SpecificTypeModeActive = false;
+                    } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !SpecificTypeModeActive) {
+                        linksource = hit.collider.GetComponent<WInteractableCaller>().Call();
+                        if(linksource != null) {
+                            SpecificTypeMode = SpecificTypeModes.Link;
+                            SpecificTypeModeActive = true;
                         }
                     }
                 } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.TactileInteraction) {
@@ -103,7 +107,6 @@ public class Player : MonoBehaviour {
                 if(hit.collider.tag == "Interactable") {
                     WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
                     if(interactable != null) {
-                        //TODO: Handle linking
                         if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Transmition) {
                             SpecificTypeModeActive = true;
                             SpecificTypeMode = SpecificTypeModes.Link;
@@ -137,6 +140,7 @@ public class Player : MonoBehaviour {
     }
 
     public enum SpecificTypeModes {
-        Link
+        Link,
+        PowerLink
     }
 }

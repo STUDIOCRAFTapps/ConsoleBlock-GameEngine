@@ -13,9 +13,10 @@ public class WInteractable : WObject {
     public bool IsInteracting = false;
 
 	virtual public void OnInteraction (Player player) {
-        //TODO: Default: Open naming menu
         IsInteracting = true;
-	}
+        player.OpenUI();
+        player.uiManager.OpenUI("Default Naming Editor", this);
+    }
 }
 
 public class FunctionTemplate {

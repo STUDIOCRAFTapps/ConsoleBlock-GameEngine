@@ -67,6 +67,7 @@
     <Compile Include="Assets\Ressources2\Script\Managing\BuildingManager.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\Experimental\AudioDeform.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\Experimental\AutoRotate.cs" />
+    <Compile Include="Assets\Ressources2\Script\Managing\GlobalVariableUI.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\InputControl.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\Player.cs" />
     <Compile Include="Assets\Ressources2\Script\Managing\UIManager.cs" />
@@ -75,6 +76,7 @@
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WDataManager.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractable.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractableCaller.cs" />
+    <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractableUI.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WObject.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\BuildingBlock.cs" />
     <Compile Include="Assets\Ressources2\Script\Objects\ButtonScript.cs" />
