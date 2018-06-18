@@ -5,9 +5,10 @@ using UnityEngine;
 public class WObject : MonoBehaviour {
 
 	public string Name = "";
-	WMaterialProprieties proprieties;
+	public WMaterialProprieties proprieties;
+    public BuildingBlock Parent;
 
-	virtual public void Initialize () {
+    virtual public void Initialize () {
 		
 	}
 
@@ -21,6 +22,4 @@ public class WObject : MonoBehaviour {
 }
 
 public class WMaterialProprieties {
-	public bool CanBurn = false;
-	public bool HasWaterResistance = true;
 }

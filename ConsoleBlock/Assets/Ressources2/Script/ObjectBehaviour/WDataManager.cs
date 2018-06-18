@@ -230,6 +230,24 @@ public class SubVariable {
 
         return res;
     }
+
+    public SubVariable ApplyOperator (OperatorType operatorType) {
+        SubVariable res = this;
+        dynamic t1 = source;
+
+        if(operatorType == OperatorType.v_minus) {
+            res.source = -t1;
+        } else if(operatorType == OperatorType.v_not) {
+            res.source = !t1;
+        } else if(operatorType == OperatorType.v_binairyNot) {
+            res.source = ~t1;
+        } else if(operatorType == OperatorType.v_round) {
+            res.variableType = VariableType.v_int;
+            res.source = Mathf.RoundToInt(t1);
+        }
+
+        return res;
+    }
 }
 
 [Serializable]
@@ -294,6 +312,9 @@ public class SolveElement : IEquatable<SolveElement> {
             return OperatorType.v_not;
             case "~":
             return OperatorType.v_binairyNot;
+            case "#":
+            Debug.Log("HEy");
+            return OperatorType.v_round;
         }
         return OperatorType.v_multiply;
     }
@@ -377,7 +398,8 @@ public enum OperatorType {
     v_or,
     v_not,
     v_binairyRightShift,
-    v_binairyLeftShift
+    v_binairyLeftShift,
+    v_round
 }
 
 public class FunctionCaller {

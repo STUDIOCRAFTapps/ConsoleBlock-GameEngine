@@ -9,6 +9,7 @@ public class Player : MonoBehaviour {
     public Rigidbody playerRigidbody;
     public RigidbodyFirstPersonController controller;
     public bool IsUICurrentlyOpened = false;
+    public bool ForcedMouvementFreeze;
 
     public UIManager uiManager;
     public BuildingManager buildingManager;
@@ -24,6 +25,14 @@ public class Player : MonoBehaviour {
     }
 
     void Update () {
+        //TODO: Inventory and stuff like that
+        if(ForcedMouvementFreeze) {
+            controller.GetComponent<Rigidbody>().isKinematic = true;
+            ForcedMouvementFreeze = false;
+
+        } else {
+            controller.GetComponent<Rigidbody>().isKinematic = false;
+        }
         if(IsUICurrentlyOpened) {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
@@ -33,14 +42,41 @@ public class Player : MonoBehaviour {
             return;
         }
 
-        if(InputControl.GetInput(InputControl.InputType.Building)) {
-            if(Input.mouseScrollDelta.y > 0.4) {
-                uiManager.EditWidgetValue("Build_BlockType", 1);
-                buildingManager.BuildingBlockType = (BuildingBlock.BlockType)uiManager.GetWidgetValue("Build_BlockType");
+        if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
+            if(InputControl.GetInput(InputControl.InputType.BuildingChangeRotation)) {
+                if(Input.mouseScrollDelta.y > 0.4) {
+                    uiManager.EditWidgetValue("Build_BlockRotation", 1);
+                    buildingManager.CurrentRotation = uiManager.GetWidgetValue("Build_BlockRotation");
+                }
+                if(Input.mouseScrollDelta.y < -0.4) {
+                    uiManager.EditWidgetValue("Build_BlockRotation", -1);
+                    buildingManager.CurrentRotation = uiManager.GetWidgetValue("Build_BlockRotation");
+                }
+            } else {
+                if(Input.mouseScrollDelta.y > 0.4) {
+                    uiManager.EditWidgetValue("Build_BlockType", 1);
+                    buildingManager.BuildingBlockType = (BuildingBlock.BlockType)uiManager.GetWidgetValue("Build_BlockType");
+                }
+                if(Input.mouseScrollDelta.y < -0.4) {
+                    uiManager.EditWidgetValue("Build_BlockType", -1);
+                    buildingManager.BuildingBlockType = (BuildingBlock.BlockType)uiManager.GetWidgetValue("Build_BlockType");
+                }
+                if(buildingManager.BuildingBlockType == BuildingBlock.BlockType.Objects) {
+                    uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
+                    buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
+                    buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
+                    buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;
+                }
             }
-            if(Input.mouseScrollDelta.y < -0.4) {
-                uiManager.EditWidgetValue("Build_BlockType", -1);
-                buildingManager.BuildingBlockType = (BuildingBlock.BlockType)uiManager.GetWidgetValue("Build_BlockType");
+            if(InputControl.GetInputDown(InputControl.InputType.BuildingInventory)) {
+                buildingManager.CurrentBlock += 1;
+                if(buildingManager.CurrentBlock >= buildingManager.Blocks.Length) {
+                    buildingManager.CurrentBlock = 0;
+                }
+                uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
+                buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
+                buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
+                buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;
             }
         }
 
@@ -66,7 +102,7 @@ public class Player : MonoBehaviour {
         Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
         RaycastHit hit;
         if(Physics.Raycast(ray, out hit)) {
-            if(hit.collider.GetComponent<WInteractableCaller>() != null) {
+            if(hit.collider.GetComponent<WInteractableCaller>() != null && !InputControl.GetInput(InputControl.InputType.BuildingMode)) {
                 if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Transmition) {
                     if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.Link) {
                         WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
@@ -102,8 +138,10 @@ public class Player : MonoBehaviour {
                     if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress)) {
                         hit.collider.GetComponent<WInteractableCaller>().Call(this);
                     }
+                } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.PointedAt) {
+                    hit.collider.GetComponent<WInteractableCaller>().PointedAtCall(this);
                 }
-            } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !InputControl.GetInput(InputControl.InputType.Building)) {
+            } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !InputControl.GetInput(InputControl.InputType.BuildingMode)) {
                 if(hit.collider.tag == "Interactable") {
                     WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
                     if(interactable != null) {
@@ -114,7 +152,7 @@ public class Player : MonoBehaviour {
                         }
                     }
                 }
-            } else if(InputControl.GetInput(InputControl.InputType.Building)) {
+            } else if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
                 buildingManager.PlaceHolderDisplay(hit);
 
                 if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress)) {
@@ -124,6 +162,8 @@ public class Player : MonoBehaviour {
                 }
                 if(InputControl.GetInputDown(InputControl.InputType.MouseMainPress)) {
                     if(hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
+                        buildingManager.DestroyObject(hit);
+                    } else if(hit.collider.tag == "Interactable" && hit.collider.GetComponent<WObject>() != null) {
                         buildingManager.DestroyObject(hit);
                     }
                 }

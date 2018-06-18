@@ -5,17 +5,21 @@ using UnityEngine;
 
 public class WInteractable : WObject {
 
-	public List<Variable> GlobalVariable = new List<Variable>();
+    public List<Variable> GlobalVariable = new List<Variable>();
     public List<FunctionTemplate> GlobalFunctionsDictionnairy = new List<FunctionTemplate>();
     public List<FunctionCaller> FunctionCall = new List<FunctionCaller>();
     public WObjectTransmitter transmitter = new WObjectTransmitter();
     [HideInInspector]
     public bool IsInteracting = false;
 
-	virtual public void OnInteraction (Player player) {
+    virtual public void OnInteraction (Player player) {
         IsInteracting = true;
         player.OpenUI();
         player.uiManager.OpenUI("Default Naming Editor", this);
+    }
+
+    virtual public void OnPointedAt (Player player) {
+
     }
 }
 

@@ -40,8 +40,33 @@ public static class InputControl {
         switch(inputType) {
             case InputType.Close:
             return KeyCode.Escape;
-            case InputType.Building:
+
+            case InputType.BuildingMode:
             return KeyCode.Tab;
+
+            case InputType.CodingInputFieldShowAutocomplete:
+            return KeyCode.LeftAlt;
+
+            case InputType.BuildingChangeRotation:
+            return KeyCode.R;
+
+            case InputType.BuildingInventory:
+            return KeyCode.E;
+
+            case InputType.MouvementFoward:
+            return KeyCode.W;
+
+            case InputType.MouvementBackward:
+            return KeyCode.S;
+
+            case InputType.MouvementLeft:
+            return KeyCode.A;
+
+            case InputType.MouvementRight:
+            return KeyCode.D;
+
+            case InputType.MouvementJump:
+            return KeyCode.Space;
         }
         return 0;
     }
@@ -58,7 +83,15 @@ public static class InputControl {
         MouseMainPress,
         MouseSecondairyPress,
         MouseSpecialPress,
+        CodingInputFieldShowAutocomplete,
         Close,
-        Building
+        BuildingMode,
+        BuildingChangeRotation,
+        BuildingInventory,
+        MouvementFoward,
+        MouvementBackward,
+        MouvementLeft,
+        MouvementRight,
+        MouvementJump
     }
 }

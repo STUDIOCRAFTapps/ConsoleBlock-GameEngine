@@ -26,6 +26,12 @@ public class WInteractableCaller : MonoBehaviour {
         }
     }
 
+    public void PointedAtCall (Player player) {
+        if(callType == CallType.PointedAt) {
+            interactable.OnPointedAt(player);
+        }
+    }
+
     public WInteractable TactileCall (Vector2 UVs, bool MouseDown, bool MousePress, bool MouseUp) {
         if(callType == CallType.TactileInteraction) {
             if(interactable.GetComponent<ScreenScript>() != null) {
@@ -33,6 +39,9 @@ public class WInteractableCaller : MonoBehaviour {
                 interactable.GetComponent<ScreenScript>().MouseDown = MouseDown;
                 interactable.GetComponent<ScreenScript>().MousePress = MousePress;
                 interactable.GetComponent<ScreenScript>().MouseUp = MouseUp;
+            }
+            if(interactable.GetComponent<ButtonScript>() != null) {
+                interactable.GetComponent<ButtonScript>().OnButtonIntercation();
             }
         }
         return null;
@@ -42,6 +51,7 @@ public class WInteractableCaller : MonoBehaviour {
 public enum CallType {
     Interaction,
     TactileInteraction,
+    PointedAt,
     Transmition,
     PowerInput,
     PowerOuput
