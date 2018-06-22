@@ -59,6 +59,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\CanvasObjects.cs" />
+    <Compile Include="Assets\HelpBubble.cs" />
+    <Compile Include="Assets\InventoryUI.cs" />
     <Compile Include="Assets\Jetpack.cs" />
     <Compile Include="Assets\PortInputField.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\GetSetAttribute.cs" />
@@ -216,9 +218,12 @@
     <Compile Include="Assets\Ressources2\TechnicalObjects\Console\ConsoleUI.cs" />
     <Compile Include="Assets\Ressources2\TechnicalObjects\Joystick\JoystickScript.cs" />
     <Compile Include="Assets\Ressources2\TechnicalObjects\Screen\ScreenScript.cs" />
+    <Compile Include="Assets\Ressources2\TechnicalObjects\ServorMotor\ServoMotor.cs" />
+    <Compile Include="Assets\Ressources2\TechnicalObjects\Switch\SwitchScript.cs" />
     <Compile Include="Assets\SwitchCodingType.cs" />
     <Compile Include="Assets\TextSizeFitter.cs" />
     <Compile Include="Assets\Tool\StoneTextureCreatorTool.cs" />
+    <Compile Include="Assets\UIAnimation.cs" />
     <Compile Include="Assets\WorldGenerator\Art\Materials\UnitySkyboxShaders-master\Assets\Test\Misc\CameraMove.cs" />
     <Compile Include="Assets\WorldGenerator\BattleTransitions\SimpleBlit.cs" />
     <Compile Include="Assets\WorldGenerator\GrabberController.cs" />

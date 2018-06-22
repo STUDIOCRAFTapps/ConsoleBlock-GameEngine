@@ -16,7 +16,7 @@ public class ButtonScript : WInteractable {
 		GlobalVariable.Add(new Variable("IsButtonPress",VariableType.v_bool,false,new VariableParameters(true,VariableAccessType.v_readonly)));
 	}
 
-	public void OnButtonIntercation() {
+	public void OnButtonInteraction() {
 		if(Input.GetMouseButtonDown(1)) {
 			ButtonDown = true;
 		}
@@ -38,6 +38,7 @@ public class ButtonScript : WInteractable {
 	void LateUpdate() {
 		if(ButtonPress) {
 			ButtonTop.localScale = new Vector3(1,0.5f,1);
+            ButtonPress = false;
 		} else {
 			ButtonTop.localScale = new Vector3(1,1,1);
 		}

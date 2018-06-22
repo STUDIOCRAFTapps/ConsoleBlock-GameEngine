@@ -35,8 +35,8 @@ public class JoystickScript : WInteractable {
     }
 
     private void Update () {
-        GlobalVariable[0].source = TargetRotation.y;
-        GlobalVariable[1].source = TargetRotation.x;
+        GlobalVariable[0].source = CurrentRotation.y;
+        GlobalVariable[1].source = CurrentRotation.x;
 
         if(!IsSelected) {
             TargetRotation = Vector2.zero;

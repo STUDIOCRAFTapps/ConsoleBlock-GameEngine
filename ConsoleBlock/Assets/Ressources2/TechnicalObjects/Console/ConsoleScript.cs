@@ -155,15 +155,6 @@ public class ConsoleScript : WInteractable {
     }
 
 	public IEnumerator OnScriptExecution () {
-        if(GlobalVariable.Count > 0) {
-            if(GlobalVariable[0].Id == "Zucc") {
-                //if(GlobalVariable[0].source == null) {
-                //    GlobalVariable[0].source = 0;
-                //}
-                //Debug.Log((bool)GlobalVariable[0].source);
-                //Debug.Log((float)GlobalVariable[0].source);
-            }
-        }
         IndexRead = 0;
 		LocalVariable = new List<Variable>();
 		StartCoroutine(ExecuteFunction("Update",new List<Variable>()));
@@ -185,6 +176,9 @@ public class ConsoleScript : WInteractable {
             //Get parameters, separate the stuff by ',' and space
             string[] Parameters = GetParameters(linescript[DeclarationLine]).Split(',');
             for(int i = 0; i < Parameters.Length; i++) {
+                if(string.IsNullOrEmpty(GetParameters(linescript[DeclarationLine]))) {
+                    break;
+                }
                 string[] SubParameters = Parameters[i].Split(' ');
                 Result.Add(new Variable(SubParameters[1],Variable.StringToType(SubParameters[0]),null,new VariableParameters(false,VariableAccessType.v_readonly)));
             }
@@ -442,8 +436,10 @@ public class ConsoleScript : WInteractable {
                     List<Variable> FunctionParameters = new List<Variable>();
 
                     FunctionParameters = GetFunctionPreparedParameters(linescript[i], SecondText, transmitter.AccessSpecificInteractableFunction(FirstText, SecondText).Parameters);
-                    transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
-                    FlowControlResult = 0;
+                    if(FunctionParameters != null) {
+                        transmitter.SendInteractableFunctionCall(FirstText, new FunctionCaller(SecondText, FunctionParameters));
+                        FlowControlResult = 0;
+                    }
                 }
 
                 //If function;
@@ -894,7 +890,6 @@ public class ConsoleScript : WInteractable {
                     SeekingType = 1;
                 } else if(OperatorChars.Contains(Line[i])) {
                     //Operator
-                    Debug.Log(Line[i]);
                     CurrentWord += Line[i];
                     SeekingType = 2;
                 } else {
@@ -975,7 +970,6 @@ public class ConsoleScript : WInteractable {
                     if(OperatorChars.Contains(Line[i])) {
                         CurrentWord += Line[i];
                     } else {
-                        Debug.Log(CurrentWord);
                         Result.Add(new SolveElement(SolveElementType.v_operator, SolveElement.StringToOperator(CurrentWord)));
                         if(Line[i] != ' ') {
                             i--;
@@ -1138,7 +1132,15 @@ public class ConsoleScript : WInteractable {
         Parameters.Add(StoringLine);
         StoringLine = string.Empty;
         for(int p = 0; p < Parameters.Count; p++) {
-            FunctionParameters.Add(new Variable(template[p].Name, template[p].type, SolveOperators(Parameters[p]).source));
+            if(SolveOperators(Parameters[p]) != null) {
+                FunctionParameters.Add(new Variable(
+                    template[p].Id,
+                    template[p].variableType,
+                    SolveOperators(Parameters[p]).source
+                ));
+            } else {
+                return null;
+            }
         }
 
         return FunctionParameters;

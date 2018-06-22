@@ -148,6 +148,23 @@ public class Variable {
         }
         return VariableType.v_bool;
     }
+
+    public static string TypeToString (VariableType S) {
+        switch(S) {
+            case VariableType.v_bool:
+            return "bool";
+            case VariableType.v_int:
+            return "int";
+            case VariableType.v_float:
+            return "float";
+            case VariableType.v_string:
+            return "string";
+            case VariableType.v_char:
+            return "char";
+
+        }
+        return "error";
+    }
 }
 
 [Serializable]
@@ -313,7 +330,6 @@ public class SolveElement : IEquatable<SolveElement> {
             case "~":
             return OperatorType.v_binairyNot;
             case "#":
-            Debug.Log("HEy");
             return OperatorType.v_round;
         }
         return OperatorType.v_multiply;

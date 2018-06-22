@@ -6,7 +6,13 @@ public static class InputControl {
 
     public static bool GetInputDown (InputType inputType) {
         if(!IsInputTypeKeycode(inputType)) {
-            return Input.GetMouseButtonDown(InputTypeToMouseButton(inputType));
+            if(inputType == InputType.SelectionScrollUp) {
+                return Input.mouseScrollDelta.y > 0.4f;
+            } else if(inputType == InputType.SelectionScrollDown) {
+                return Input.mouseScrollDelta.y < 0.4f;
+            } else {
+                return Input.GetMouseButtonDown(InputTypeToMouseButton(inputType));
+            }
         } else {
             return Input.GetKeyDown(InputTypeToKeycode(inputType));
         }
@@ -14,7 +20,13 @@ public static class InputControl {
 
     public static bool GetInput (InputType inputType) {
         if(!IsInputTypeKeycode(inputType)) {
-            return Input.GetMouseButton(InputTypeToMouseButton(inputType));
+            if(inputType == InputType.SelectionScrollUp) {
+                return Input.mouseScrollDelta.y > 0f;
+            } else if(inputType == InputType.SelectionScrollDown) {
+                return Input.mouseScrollDelta.y < 0f;
+            } else {
+                return Input.GetMouseButton(InputTypeToMouseButton(inputType));
+            }
         } else {
             return Input.GetKey(InputTypeToKeycode(inputType));
         }
@@ -26,6 +38,54 @@ public static class InputControl {
         } else {
             return Input.GetKeyUp(InputTypeToKeycode(inputType));
         }
+    }
+
+    public static bool GetAnyInputDown (InputType[] inputType) {
+        bool Result = false;
+        foreach(InputType input in inputType) {
+            if(!IsInputTypeKeycode(input)) {
+                if(input == InputType.SelectionScrollUp) {
+                    Result = Result || Input.mouseScrollDelta.y > 0.4f;
+                } else if(input == InputType.SelectionScrollDown) {
+                    Result = Result || Input.mouseScrollDelta.y < 0.4f;
+                } else {
+                    Result = Result || Input.GetMouseButtonDown(InputTypeToMouseButton(input));
+                }
+            } else {
+                Result = Result || Input.GetKeyDown(InputTypeToKeycode(input));
+            }
+        }
+        return Result;
+    }
+
+    public static bool GetAnyInput (InputType[] inputType) {
+        bool Result = false;
+        foreach(InputType input in inputType) {
+            if(!IsInputTypeKeycode(input)) {
+                if(input == InputType.SelectionScrollUp) {
+                    Result = Result || Input.mouseScrollDelta.y > 0f;
+                } else if(input == InputType.SelectionScrollDown) {
+                    Result = Result || Input.mouseScrollDelta.y < 0f;
+                } else {
+                    Result = Result || Input.GetMouseButton(InputTypeToMouseButton(input));
+                }
+            } else {
+                Result = Result || Input.GetKey(InputTypeToKeycode(input));
+            }
+        }
+        return Result;
+    }
+
+    public static bool GetAnyInputUp (InputType[] inputType) {
+        bool Result = false;
+        foreach(InputType input in inputType) {
+            if(!IsInputTypeKeycode(input)) {
+                Result = Result || Input.GetMouseButtonUp(InputTypeToMouseButton(input));
+            } else {
+                Result = Result || Input.GetKeyUp(InputTypeToKeycode(input));
+            }
+        }
+        return Result;
     }
 
     public static int InputTypeToMouseButton (InputType inputType) {
@@ -67,12 +127,24 @@ public static class InputControl {
 
             case InputType.MouvementJump:
             return KeyCode.Space;
+
+            case InputType.SelectionUp:
+            return KeyCode.UpArrow;
+
+            case InputType.SelectionDown:
+            return KeyCode.DownArrow;
+
+            case InputType.SelectionLeft:
+            return KeyCode.LeftArrow;
+
+            case InputType.SelectionRight:
+            return KeyCode.RightArrow;
         }
         return 0;
     }
 
     public static bool IsInputTypeKeycode (InputType inputType) {
-        if(inputType == InputType.MouseMainPress || inputType == InputType.MouseSecondairyPress || inputType == InputType.MouseSpecialPress) {
+        if(inputType == InputType.MouseMainPress || inputType == InputType.MouseSecondairyPress || inputType == InputType.MouseSpecialPress || inputType == InputType.SelectionScrollDown || inputType == InputType.SelectionScrollUp) {
             return false;
         } else {
             return true;
@@ -83,6 +155,8 @@ public static class InputControl {
         MouseMainPress,
         MouseSecondairyPress,
         MouseSpecialPress,
+        SelectionScrollUp,
+        SelectionScrollDown,
         CodingInputFieldShowAutocomplete,
         Close,
         BuildingMode,
@@ -92,6 +166,10 @@ public static class InputControl {
         MouvementBackward,
         MouvementLeft,
         MouvementRight,
-        MouvementJump
+        MouvementJump,
+        SelectionUp,
+        SelectionDown,
+        SelectionLeft,
+        SelectionRight
     }
 }

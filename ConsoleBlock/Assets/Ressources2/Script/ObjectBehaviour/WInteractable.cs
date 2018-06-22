@@ -34,11 +34,11 @@ public class FunctionTemplate {
 }
 
 public class VariableTemplate {
-    public string Name;
-    public VariableType type;
+    public string Id;
+    public VariableType variableType;
 
     public VariableTemplate (string Name, VariableType type) {
-        this.Name = Name;
-        this.type = type;
+        this.Id = Name;
+        this.variableType = type;
     }
 }

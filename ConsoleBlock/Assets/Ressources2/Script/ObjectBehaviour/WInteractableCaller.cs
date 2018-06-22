@@ -33,6 +33,11 @@ public class WInteractableCaller : MonoBehaviour {
     }
 
     public WInteractable TactileCall (Vector2 UVs, bool MouseDown, bool MousePress, bool MouseUp) {
+        if(MouseDown) {
+            if(interactable.GetComponent<SwitchScript>() != null) {
+                interactable.GetComponent<SwitchScript>().OnSwitchInteraction();
+            }
+        }
         if(callType == CallType.TactileInteraction) {
             if(interactable.GetComponent<ScreenScript>() != null) {
                 interactable.GetComponent<ScreenScript>().TouchUVs = UVs;
@@ -41,7 +46,7 @@ public class WInteractableCaller : MonoBehaviour {
                 interactable.GetComponent<ScreenScript>().MouseUp = MouseUp;
             }
             if(interactable.GetComponent<ButtonScript>() != null) {
-                interactable.GetComponent<ButtonScript>().OnButtonIntercation();
+                interactable.GetComponent<ButtonScript>().OnButtonInteraction();
             }
         }
         return null;

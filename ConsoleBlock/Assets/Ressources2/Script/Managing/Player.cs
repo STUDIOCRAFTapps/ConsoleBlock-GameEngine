@@ -18,6 +18,8 @@ public class Player : MonoBehaviour {
     public SpecificTypeModes SpecificTypeMode;
     public Image SpecificTypeModeOverlay;
 
+    public InventoryUI inventory;
+
     WInteractable linksource;
 
     void Start () {
@@ -69,14 +71,8 @@ public class Player : MonoBehaviour {
                 }
             }
             if(InputControl.GetInputDown(InputControl.InputType.BuildingInventory)) {
-                buildingManager.CurrentBlock += 1;
-                if(buildingManager.CurrentBlock >= buildingManager.Blocks.Length) {
-                    buildingManager.CurrentBlock = 0;
-                }
-                uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
-                buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
-                buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
-                buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;
+                buildingManager.BuildingBlockType = BuildingBlock.BlockType.Objects;
+                inventory.gameObject.SetActive(!inventory.gameObject.activeSelf);
             }
         }
 

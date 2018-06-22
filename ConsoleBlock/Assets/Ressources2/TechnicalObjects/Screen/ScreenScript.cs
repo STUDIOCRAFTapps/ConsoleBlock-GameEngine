@@ -73,7 +73,7 @@ public class ScreenScript : WInteractable {
 
     override public void Update () {
         for(int i = 0; i < FunctionCall.Count; i++) {
-            FunctionCaller fc = FunctionCall[0];
+            FunctionCaller fc = FunctionCall[FunctionCall.Count - 1];
             FunctionCall.RemoveAt(0);
             int pr = i;
             i = 0;

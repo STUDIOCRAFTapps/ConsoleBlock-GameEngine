@@ -19,6 +19,9 @@ public class ConsoleUI : DefaultUI {
     public RectTransform AutocompleteOptionTemplate;
     public RectTransform AutocompleteOptionView;
 
+    public RectTransform FunctionParameters;
+    public Text FunctionParametersText;
+
     public GameObject[] Tabs;
     string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
 
@@ -125,9 +128,9 @@ public class ConsoleUI : DefaultUI {
             GameObject button = (GameObject)Instantiate(FunctionExecuterTemplate.gameObject,FunctionExecuterView);
             button.SetActive(true);
             button.transform.GetChild(0).GetComponent<Text>().text = Target.GetComponent<ConsoleScript>().GlobalFunctionNames[i];
+            int x = i;
             button.GetComponent<Button>().onClick.AddListener(() => {
-                int x = i;
-                Target.GetComponent<ConsoleScript>().ExecuteFunction(Target.GetComponent<ConsoleScript>().GlobalFunctionNames[x], Target.GetComponent<ConsoleScript>().GetFunctionParametersTemplate(Target.GetComponent<ConsoleScript>().GlobalFunctionNames[x]));
+                StartCoroutine(Target.GetComponent<ConsoleScript>().ExecuteFunction(Target.GetComponent<ConsoleScript>().GlobalFunctionNames[x], Target.GetComponent<ConsoleScript>().GetFunctionParametersTemplate(Target.GetComponent<ConsoleScript>().GlobalFunctionNames[x])));
             });
         }
     }
@@ -144,8 +147,10 @@ public class ConsoleUI : DefaultUI {
         }
         Target.Name = nameInputField.text;
 
-        for(int i = 0; i < Target.GetComponent<ConsoleScript>().GlobalVariable.Count; i++) {
-            Target.GetComponent<ConsoleScript>().GlobalVariable[i].source = Target.GetComponent<ConsoleScript>().GlobalVariableCompileValue[i];
+        if(Target.GetComponent<ConsoleScript>().GlobalVariable.Count == Target.GetComponent<ConsoleScript>().GlobalVariableCompileValue.Count) {
+            for(int i = 0; i < Target.GetComponent<ConsoleScript>().GlobalVariable.Count; i++) {
+                Target.GetComponent<ConsoleScript>().GlobalVariable[i].source = Target.GetComponent<ConsoleScript>().GlobalVariableCompileValue[i];
+            }
         }
         UpdateFunctionExecutionTabs();
         CreateGlobalVariableTemplate();
@@ -163,9 +168,102 @@ public class ConsoleUI : DefaultUI {
         if(Input.anyKey) {
             anyKeyHold = true;
         }
+
         //TODO: Autocomplete stuff here
-        if(Tabs[0].activeInHierarchy && !string.IsNullOrEmpty(scriptInputField.text)) {
-            //scriptInputField.caretPosition
+        if(Tabs[0].activeInHierarchy) {
+            //Function Autocomplete: Get the last ( detected. Find the last . before it. Get the Name and the Function kit attached to it and if everything is there display the helper and format some text
+            string FunctionHelperText = string.Empty;
+            if(scriptInputField.text.Contains("(") && scriptInputField.text.Length > 3) {
+                string s = scriptInputField.text;
+                int Phase = 0;
+                string First = string.Empty;
+                string Second = string.Empty;
+                int Lenght = 1;
+                for(int i = CursorPosition - 1; i >= 0; i--) {
+                    if(i >= s.Length) {
+                        break;
+                    }
+                    if(Phase == 0) {
+                        if(s[i] == '(') {
+                            Phase = 1;
+                        } else if(!AllowedChars.Contains(s[i].ToString())) {
+                            break;
+                        }
+                    } else if(Phase == 1) {
+                        if(AllowedChars.Contains(s[i].ToString())) {
+                            First = First.Insert(0, s[i].ToString());
+                        } else if(s[i] == '.') {
+                            Phase = 2;
+                            Lenght = 2;
+                        } else {
+                            Lenght = 1;
+                            break;
+                        }
+                    } else if(Phase == 2) {
+                        if(AllowedChars.Contains(s[i].ToString())) {
+                            Second = Second.Insert(0, s[i].ToString());
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                if(Phase > 0) {
+                    if(Lenght == 1) {
+                        if(First.Length > 0) {
+                            if(Target.GetComponent<ConsoleScript>().GlobalFunctionNames.Contains(First)) {
+                                List<Variable> ft = Target.GetComponent<ConsoleScript>().GetFunctionParametersTemplate(First);
+                                FunctionHelperText += "(";
+                                foreach(Variable v in ft) {
+                                    if(FunctionHelperText != "(") {
+                                        FunctionHelperText += ", ";
+                                    }
+
+                                    FunctionHelperText += Variable.TypeToString(v.variableType);
+                                    FunctionHelperText += " ";
+                                    FunctionHelperText += v.Id;
+                                }
+                                FunctionHelperText += ")";
+                            }
+                        }
+                    } else if(Lenght == 2) {
+                        if(First.Length > 0 && Second.Length > 0) {
+                            bool k = false;
+                            foreach(WInteractable inter in Target.GetComponent<ConsoleScript>().transmitter.sources) {
+                                if(inter.Name == Second) {
+                                    k = true;
+                                }
+                            }
+                            if(k) {
+                                FunctionTemplate ft = Target.GetComponent<ConsoleScript>().transmitter.AccessSpecificInteractableFunction(Second, First);
+                                FunctionHelperText += "(";
+                                foreach(VariableTemplate v in ft.Parameters) {
+                                    if(FunctionHelperText != "(") {
+                                        FunctionHelperText += ", ";
+                                    }
+
+                                    FunctionHelperText += Variable.TypeToString(v.variableType);
+                                    FunctionHelperText += " ";
+                                    FunctionHelperText += v.Id;
+                                }
+                                FunctionHelperText += ")";
+                            }
+                        }
+                    }
+                }
+            }
+            if(FunctionHelperText.Length > 0) {
+                FunctionParametersText.text = FunctionHelperText;
+                if(!FunctionParameters.gameObject.activeSelf) {
+                    FunctionParameters.gameObject.SetActive(true);
+                }
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)FunctionParameters.transform);
+            } else {
+                if(FunctionParameters.gameObject.activeSelf) {
+                    FunctionParameters.gameObject.SetActive(false);
+                }
+            }
+
             ConsoleScript c = Target.GetComponent<ConsoleScript>();
             string textpart = string.Empty;
             if(CursorPosition - 1 >= 0 && CursorPosition - 1 < scriptInputField.text.Length) {
@@ -182,21 +280,22 @@ public class ConsoleUI : DefaultUI {
                 textpart = " ";
             }
 
+            if(InputControl.GetInput(InputControl.InputType.MouseSecondairyPress)) {
+                Autocomplete.position = Input.mousePosition;
+            }
+
             //Autocomplete
-            if((c.AllowedChars.Contains(textpart[0].ToString()) || string.IsNullOrWhiteSpace(textpart)) && !char.IsDigit(textpart[0])) {
+            if((c.AllowedChars.Contains(textpart[0].ToString()) || (string.IsNullOrWhiteSpace(textpart) || string.IsNullOrEmpty(textpart))) && !char.IsDigit(textpart[0])) {
 
                 List<string> AutocompleteResult = GetAutocompleteOptions();
 
                 //Set the position of the autocomplete box and config it
                 //Must be able to understand Arrow and Enters
-                if(InputControl.GetInput(InputControl.InputType.MouseSecondairyPress)) {
-                    Autocomplete.position = Input.mousePosition;
-                }
-                if(AutocompleteResult.Count > 0 && (string.IsNullOrWhiteSpace(textpart) == InputControl.GetInput(InputControl.InputType.CodingInputFieldShowAutocomplete))) {
+                if(AutocompleteResult.Count > 0 && ((string.IsNullOrWhiteSpace(textpart)||string.IsNullOrEmpty(textpart)) == InputControl.GetInput(InputControl.InputType.CodingInputFieldShowAutocomplete)) || FunctionParameters.gameObject.activeSelf) {
                     if(!Autocomplete.gameObject.activeInHierarchy) {
                         Autocomplete.gameObject.SetActive(true);
                     }
-                    if((!Input.anyKey && anyKeyHold) || InputControl.GetInput(InputControl.InputType.CodingInputFieldShowAutocomplete)) {
+                    if((!Input.anyKey && anyKeyHold) || InputControl.GetInput(InputControl.InputType.CodingInputFieldShowAutocomplete) && !FunctionParameters.gameObject.activeSelf) {
                         for(int i = 0; i < AutocompleteOptionView.childCount - 1; i++) {
                             Destroy(AutocompleteOptionView.GetChild(i + 1).gameObject);
                         }
@@ -211,7 +310,7 @@ public class ConsoleUI : DefaultUI {
                         }
                     }
                 } else {
-                    if(Autocomplete.gameObject.activeInHierarchy) {
+                    if(Autocomplete.gameObject.activeInHierarchy && !FunctionParameters.gameObject.activeSelf) {
                         Autocomplete.gameObject.SetActive(false);
                     }
                 }
