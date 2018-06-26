@@ -36,6 +36,7 @@ public class Player : MonoBehaviour {
             controller.GetComponent<Rigidbody>().isKinematic = false;
         }
         if(IsUICurrentlyOpened) {
+            //Hide/Show building widget/inventory
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
             if(controller.enabled == true) {
@@ -45,7 +46,10 @@ public class Player : MonoBehaviour {
         }
 
         if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
-            if(InputControl.GetInput(InputControl.InputType.BuildingChangeRotation)) {
+            if(InputControl.GetInputDown(InputControl.InputType.BuildingChangeRotation)) {
+                uiManager.EditWidgetValue("Build_BlockRotation", -uiManager.GetWidgetValue("Build_BlockRotation"));
+                buildingManager.CurrentRotation = uiManager.GetWidgetValue("Build_BlockRotation");
+            } else if(InputControl.GetInput(InputControl.InputType.BuildingChangeRotation)) {
                 if(Input.mouseScrollDelta.y > 0.4) {
                     uiManager.EditWidgetValue("Build_BlockRotation", 1);
                     buildingManager.CurrentRotation = uiManager.GetWidgetValue("Build_BlockRotation");

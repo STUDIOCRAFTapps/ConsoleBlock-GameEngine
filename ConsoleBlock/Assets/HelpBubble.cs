@@ -32,11 +32,14 @@ public class HelpBubble : MonoBehaviour {
         StartCoroutine(CompleteAnimation());
     }
 
-    // Update is called once per frame
-    void Update () {
+    void OnEnable () {
         if(InProgress && ValidRect.gameObject.activeSelf) {
             Destroy(gameObject);
         }
+    }
+
+    // Update is called once per frame
+    void Update () {
         if(bubbleSolve == BubbleSolve.Keycodes && InputControl.GetAnyInput(keycode)) {
             StartCoroutine(CompleteAnimation());
         }

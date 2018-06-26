@@ -67,7 +67,8 @@ public class InventoryUI : MonoBehaviour {
         }
     }
 
-    void UpdateCurrentBlock () {CurrentSlotIndicator.anchoredPosition = inventorySlots[buildingManager.CurrentBlock].anchoredPosition;
+    void UpdateCurrentBlock () {
+        CurrentSlotIndicator.anchoredPosition = inventorySlots[buildingManager.CurrentBlock].anchoredPosition;
         uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
         buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
         buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;

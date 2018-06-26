@@ -10,7 +10,9 @@ public class ServoMotor : WInteractable {
     float AtSpeed = 0f;
 
     Vector3 StartRot;
-    float StartTime = 0f;
+    float cRot = 0f;
+
+    float EnginSpeed = 100f;
 
     private void Start () {
         GlobalVariable.Add(new Variable("CurrentRotaion", VariableType.v_float, 0f, new VariableParameters(true, VariableAccessType.v_readonly)));
@@ -29,6 +31,8 @@ public class ServoMotor : WInteractable {
     }
 
     override public void Update () {
+        GlobalVariable[0].source = ParentRotor.localEulerAngles.y;
+
         for(int i = 0; i < FunctionCall.Count; i++) {
             FunctionCaller fc = FunctionCall[FunctionCall.Count - 1];
             FunctionCall.RemoveAt(0);
@@ -42,29 +46,28 @@ public class ServoMotor : WInteractable {
                     Goto = -Goto;
                 }
                 StartRot = ParentRotor.localEulerAngles;
-                StartTime = Time.time;
+                cRot = ParentRotor.localEulerAngles.y;
             } else if(fc.Name == "ExecuteRotation") {
-                Goto = (float)fc.parameters[0].source;
+                Goto = ParentRotor.localEulerAngles.y/360f+(float)fc.parameters[0].source;
                 AtSpeed = Mathf.Clamp((float)fc.parameters[1].source, -1f, 1f);
 
                 if(AtSpeed < 0) {
                     Goto = -Goto;
                 }
                 StartRot = ParentRotor.localEulerAngles;
-                StartTime = Time.time;
+                cRot = ParentRotor.localEulerAngles.y;
             } else if(fc.Name == "SetConstantSpeed") {
                 Goto = Mathf.Infinity;
                 AtSpeed = Mathf.Clamp((float)fc.parameters[0].source, -1f, 1f);
-                StartRot = ParentRotor.localEulerAngles;
-                StartTime = Time.time;
             }
             i = pr;
         }
 
         if(AtSpeed != 0f && Goto != Mathf.Infinity && Goto != Mathf.NegativeInfinity) {
-            ParentRotor.localEulerAngles = Vector3.Slerp(StartRot, new Vector3(0f, Goto * 360f, 0f), ParentRotor.localEulerAngles.y+Time.deltaTime*AtSpeed);
+            ParentRotor.localEulerAngles = new Vector3(0f,Mathf.Clamp(cRot + (AtSpeed * EnginSpeed) * Time.deltaTime, StartRot.y, Goto * 360f),0f);
+            cRot = Mathf.Clamp(cRot + (AtSpeed * EnginSpeed) * Time.deltaTime, StartRot.y, Goto * 360f);
         } else if(Goto == Mathf.Infinity || Goto == Mathf.NegativeInfinity) {
-            ParentRotor.localEulerAngles += Vector3.up * AtSpeed;
+            ParentRotor.localEulerAngles += Vector3.up * (AtSpeed*EnginSpeed) * Time.deltaTime;
         }
     }
 }

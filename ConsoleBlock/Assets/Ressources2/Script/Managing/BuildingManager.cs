@@ -47,7 +47,8 @@ public class BuildingManager : MonoBehaviour {
             n = new Vector3(Mathf.Round(n.x * 1024f) / 1024f, Mathf.Round(n.y * 1024f) / 1024f, Mathf.Round(n.z * 1024f) / 1024f);
             Vector3 r = hit.collider.transform.localEulerAngles;                                                                        //r: Rotation
             Vector3 pr = bb.Parent.transform.eulerAngles;                                                                               //pr: Parent Rotation
-            float v = transform.parent.eulerAngles.y - 180;                                                                             //v: Player Look Direction
+            float v = RelativeEuler(pr, transform.parent.eulerAngles - Vector3.up * 180).y;
+            //float v = transform.parent.eulerAngles.y - 180;                                                                             //v: Player Look Direction
             float vx = bb.transform.localEulerAngles.x;
             if(v > 180) {
                 v -= 360;
@@ -60,10 +61,10 @@ public class BuildingManager : MonoBehaviour {
 
             if(bb.blockType == BuildingBlock.BlockType.Cube) {
                 if(n.y > 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, Mathf.Round(v / 90f) * 90f, 0));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, CurrentRotation * 90 + Mathf.Round(v / 90f) * 90f, 0));
                     PlaceHolderObject.position = pos + RelativeDirection((BlockSize / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), 0f, StepR(bp.z * BlockSize, 0.2f)), hit);
                 } else if(n.y < 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, Mathf.Round(v / 90f) * 90f, 180));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, CurrentRotation * 90 + Mathf.Round(v / 90f) * 90f, 180));
                     PlaceHolderObject.position = pos + RelativeDirection((BlockSize / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), 0f, StepR(bp.z * BlockSize, 0.2f)), hit);
                 } else if(n.x > 0) {
                     PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(CurrentRotation * 90 + 90, 0, -90));
@@ -72,18 +73,20 @@ public class BuildingManager : MonoBehaviour {
                     PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(CurrentRotation * 90 + 90, 180, -90));
                     PlaceHolderObject.position = pos + RelativeDirection((BlockSize / 2) * n + new Vector3(0f, StepR(bp.y * BlockSize, 0.2f), StepR(bp.z * BlockSize, 0.2f)), hit);
                 } else if(n.z > 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(90, CurrentRotation * 90, 0));
+                    //PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(90, CurrentRotation * 90, 0));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(CurrentRotation * 90 + 90, -90, -90));
                     PlaceHolderObject.position = pos + RelativeDirection((BlockSize / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), StepR(bp.y * BlockSize, 0.2f), 0f), hit);
                 } else if(n.z < 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(90, CurrentRotation * 90, 180));
+                    //PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(90, CurrentRotation * 90, 180));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(CurrentRotation * 90 + 90, -90, 90));
                     PlaceHolderObject.position = pos + RelativeDirection((BlockSize / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), StepR(bp.y * BlockSize, 0.2f), 0f), hit);
                 }
             } else if(bb.blockType == BuildingBlock.BlockType.Floor) {
                 if(n.y > 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, Mathf.Round(v / 90f) * 90f, 0));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, CurrentRotation * 90 + Mathf.Round(v / 90f) * 90f, 0));
                     PlaceHolderObject.position = pos + RelativeDirection((bth / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), 0f, StepR(bp.z * BlockSize, 0.2f)), hit);
                 } else if(n.y < 0) {
-                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, Mathf.Round(v / 90f) * 90f, 180));
+                    PlaceHolderObject.eulerAngles = RelativeEuler(pr, new Vector3(0, CurrentRotation * 90 + Mathf.Round(v / 90f) * 90f, 180));
                     PlaceHolderObject.position = pos + RelativeDirection((bth / 2) * n + new Vector3(StepR(bp.x * BlockSize, 0.2f), 0f, StepR(bp.z * BlockSize, 0.2f)), hit);
                 }
             } else if(bb.blockType == BuildingBlock.BlockType.Wall) {
@@ -118,7 +121,8 @@ public class BuildingManager : MonoBehaviour {
             n = new Vector3(Mathf.Round(n.x * 1024f) / 1024f, Mathf.Round(n.y * 1024f) / 1024f, Mathf.Round(n.z * 1024f) / 1024f);
             Vector3 r = hit.collider.transform.localEulerAngles;                                                                        //r: Rotation
             Vector3 pr = bb.Parent.transform.eulerAngles;                                                                               //pr: Parent Rotation
-            float v = transform.parent.eulerAngles.y-180;                                                                               //v: Player Look Direction
+            float v = RelativeEuler(pr, transform.parent.eulerAngles-Vector3.up*180).y;
+            //float v = transform.parent.eulerAngles.y-180;                                                                               //v: Player Look Direction
             float vx = bb.transform.localEulerAngles.x;
             if(v > 180) {
                 v -= 360;
@@ -337,6 +341,31 @@ public class BuildingManager : MonoBehaviour {
                             }
                         }
                     }
+                }
+            }
+            if(bb.blockType == BuildingBlock.BlockType.Anchor) {
+                if(BuildingBlockType == BuildingBlock.BlockType.Floor) {
+                    PlaceHolderFloor.eulerAngles = pr;
+                    PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                }
+                if(BuildingBlockType == BuildingBlock.BlockType.Wall) {
+                    if(v > -45 && v < 45) {
+                        PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 0, 0));
+                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    } else if(v > 45 && v < 135) {
+                        PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 90, 0));
+                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    } else if(v > 135 && v < 180 || v > -180 && v < -135) {
+                        PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 0, 0));
+                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    } else if(v > -135 && v < -45) {
+                        PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 90, 0));
+                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    }
+                }
+                if(BuildingBlockType == BuildingBlock.BlockType.Cube) {
+                    PlaceHolderBlock.eulerAngles = pr;
+                    PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
                 }
             }
 
