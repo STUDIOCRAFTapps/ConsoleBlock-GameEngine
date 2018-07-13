@@ -19,6 +19,8 @@ public class BuildingManager : MonoBehaviour {
     public GameObject ObjectWall;
     public GameObject ObjectStair;
 
+    public Player player;
+
     public WObjectFile[] Blocks;
     public int CurrentBlock = 0;
     public int CurrentRotation = 0;
@@ -47,7 +49,7 @@ public class BuildingManager : MonoBehaviour {
             n = new Vector3(Mathf.Round(n.x * 1024f) / 1024f, Mathf.Round(n.y * 1024f) / 1024f, Mathf.Round(n.z * 1024f) / 1024f);
             Vector3 r = hit.collider.transform.localEulerAngles;                                                                        //r: Rotation
             Vector3 pr = bb.Parent.transform.eulerAngles;                                                                               //pr: Parent Rotation
-            float v = RelativeEuler(pr, transform.parent.eulerAngles - Vector3.up * 180).y;
+            float v = transform.parent.eulerAngles.y - pr.y;
             //float v = transform.parent.eulerAngles.y - 180;                                                                             //v: Player Look Direction
             float vx = bb.transform.localEulerAngles.x;
             if(v > 180) {
@@ -121,7 +123,7 @@ public class BuildingManager : MonoBehaviour {
             n = new Vector3(Mathf.Round(n.x * 1024f) / 1024f, Mathf.Round(n.y * 1024f) / 1024f, Mathf.Round(n.z * 1024f) / 1024f);
             Vector3 r = hit.collider.transform.localEulerAngles;                                                                        //r: Rotation
             Vector3 pr = bb.Parent.transform.eulerAngles;                                                                               //pr: Parent Rotation
-            float v = RelativeEuler(pr, transform.parent.eulerAngles-Vector3.up*180).y;
+            float v = transform.parent.eulerAngles.y - pr.y;
             //float v = transform.parent.eulerAngles.y-180;                                                                               //v: Player Look Direction
             float vx = bb.transform.localEulerAngles.x;
             if(v > 180) {
@@ -346,7 +348,7 @@ public class BuildingManager : MonoBehaviour {
             if(bb.blockType == BuildingBlock.BlockType.Anchor) {
                 if(BuildingBlockType == BuildingBlock.BlockType.Floor) {
                     PlaceHolderFloor.eulerAngles = pr;
-                    PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y, hit);
                 }
                 if(BuildingBlockType == BuildingBlock.BlockType.Wall) {
                     if(v > -45 && v < 45) {
@@ -365,7 +367,7 @@ public class BuildingManager : MonoBehaviour {
                 }
                 if(BuildingBlockType == BuildingBlock.BlockType.Cube) {
                     PlaceHolderBlock.eulerAngles = pr;
-                    PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
                 }
             }
 
@@ -400,13 +402,34 @@ public class BuildingManager : MonoBehaviour {
     public void PlaceObject (RaycastHit hit) {
         if(BuildingBlockType == BuildingBlock.BlockType.Objects && hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
             GameObject obj = (GameObject)Instantiate(Blocks[CurrentBlock].Prefab, PlaceHolderObject.position, PlaceHolderObject.rotation);
-            obj.transform.parent = hit.collider.GetComponent<BuildingBlock>().Parent.transform;
-            if(obj.GetComponent<WObject>() != null) {
-                obj.GetComponent<WObject>().Parent = hit.collider.GetComponent<BuildingBlock>().Parent;
-                hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.GetComponent<WObject>());
-            } else if(obj.transform.GetChild(0).GetComponent<WObject>() != null) {
-                obj.transform.GetChild(0).GetComponent<WObject>().Parent = hit.collider.GetComponent<BuildingBlock>().Parent;
-                hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.transform.GetChild(0).GetComponent<WObject>());
+            WInteractable interactable = null;
+            if(obj.transform.childCount > 0) {
+                interactable = obj.transform.GetChild(0).GetComponent<WInteractable>();
+            }
+            if(interactable != null) {
+                interactable.InfinitePPSFilling = player.EnableInfintePPSFilling;
+            }
+            if(obj.GetComponent<Rigidbody>() == null) {
+                obj.transform.parent = hit.collider.GetComponent<BuildingBlock>().Parent.transform;
+                if(obj.GetComponent<WObject>() != null) {
+                    obj.GetComponent<WObject>().Parent = hit.collider.GetComponent<BuildingBlock>().Parent;
+                    hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.GetComponent<WObject>());
+                }
+                if(obj.GetComponent<WObject>() == null && obj.transform.GetChild(0).GetComponent<WObject>() != null) {
+                    obj.transform.GetChild(0).GetComponent<WObject>().Parent = hit.collider.GetComponent<BuildingBlock>().Parent;
+                    hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.transform.GetChild(0).GetComponent<WObject>());
+                }
+            }
+        } else if((BuildingBlockType == BuildingBlock.BlockType.Cube || BuildingBlockType == BuildingBlock.BlockType.Floor) && hit.collider.name == "WCollider") {
+            if(PlaceHolderBlock.position != Vector3.zero) {
+                GameObject obj = (GameObject)Instantiate(ObjectBlock, PlaceHolderBlock.position, PlaceHolderBlock.rotation);
+                obj.transform.parent = null;
+                obj.GetComponent<BuildingBlock>().Parent = obj.GetComponent<BuildingBlock>();
+            }
+            if(PlaceHolderFloor.position != Vector3.zero) {
+                GameObject obj = (GameObject)Instantiate(ObjectFloor, PlaceHolderFloor.position, PlaceHolderFloor.rotation);
+                obj.transform.parent = null;
+                obj.GetComponent<BuildingBlock>().Parent = obj.GetComponent<BuildingBlock>();
             }
         } else if(BuildingBlockType != BuildingBlock.BlockType.Objects && hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
             if(PlaceHolderBlock.position != Vector3.zero) {
@@ -437,6 +460,11 @@ public class BuildingManager : MonoBehaviour {
     }
 
     public void DestroyObject (RaycastHit hit) {
+        if(hit.collider.transform.childCount > 0) {
+            if(hit.collider.transform.GetChild(hit.collider.transform.childCount-1) == player.playerRigidbody.transform) {
+                return;
+            }
+        }
         if(hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
             hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Remove(hit.collider.GetComponent<BuildingBlock>());
             Destroy(hit.collider.gameObject);

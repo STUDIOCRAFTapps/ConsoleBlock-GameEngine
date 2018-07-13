@@ -19,6 +19,9 @@ public class ScreenScript : WInteractable {
     int TextCursorY = 0;
 
     private void Start () {
+        ComsumePPS = !InfinitePPSFilling;
+        PPSComsumption = 5.0f;
+
         InitScreen();
 
         GlobalVariable.Add(new Variable("ScreenWidth", VariableType.v_int, 96, new VariableParameters(true, VariableAccessType.v_readonly)));
@@ -72,113 +75,115 @@ public class ScreenScript : WInteractable {
     }
 
     override public void Update () {
-        for(int i = 0; i < FunctionCall.Count; i++) {
-            FunctionCaller fc = FunctionCall[FunctionCall.Count - 1];
-            FunctionCall.RemoveAt(0);
-            int pr = i;
-            i = 0;
-            if(fc.Name == "Fill") {
-                Color color = new Color {
-                    r = (float)fc.parameters[0].source,
-                    g = (float)fc.parameters[1].source,
-                    b = (float)fc.parameters[2].source,
-                    a = 1f
-                };
+        if(CanExecuteCode()) {
+            for(int i = 0; i < FunctionCall.Count; i++) {
+                FunctionCaller fc = FunctionCall[FunctionCall.Count - 1];
+                FunctionCall.RemoveAt(0);
+                int pr = i;
+                i = 0;
+                if(fc.Name == "Fill") {
+                    Color color = new Color {
+                        r = (float)fc.parameters[0].source,
+                        g = (float)fc.parameters[1].source,
+                        b = (float)fc.parameters[2].source,
+                        a = 1f
+                    };
 
-                Color[] colors = display.GetPixels();
-                for(int c = 0; c < colors.Length; c++) {
-                    colors[c] = color;
-                }
-
-                display.SetPixels(colors);
-                UpdateScreen();
-            } else
-            if(fc.Name == "SetColor") {
-                CurrentColor = new Color {
-                    r = (float)fc.parameters[0].source,
-                    g = (float)fc.parameters[1].source,
-                    b = (float)fc.parameters[2].source,
-                    a = 1f
-                };
-            } else
-            if(fc.Name == "SetTextCursor") {
-                TextCursorX = (int)fc.parameters[0].source;
-                TextCursorY = (int)fc.parameters[1].source;
-            } else
-            if(fc.Name == "DrawText") {
-                Color[] colors = display.GetPixels();
-                string text = (string)fc.parameters[0].source;
-                for(int t = 0; t < text.Length; t++) {
-                    byte b = (byte)(Converter.IndexOf(char.ToUpper(text[t])));
-                    if(b > 127) {
-                        b = 0;
+                    Color[] colors = display.GetPixels();
+                    for(int c = 0; c < colors.Length; c++) {
+                        colors[c] = color;
                     }
-                    int readb = 2 + b * 3;
 
-                    byte width = BitmapFont[0];
-                    byte height = BitmapFont[1];
+                    display.SetPixels(colors);
+                    UpdateScreen();
+                } else
+                if(fc.Name == "SetColor") {
+                    CurrentColor = new Color {
+                        r = (float)fc.parameters[0].source,
+                        g = (float)fc.parameters[1].source,
+                        b = (float)fc.parameters[2].source,
+                        a = 1f
+                    };
+                } else
+                if(fc.Name == "SetTextCursor") {
+                    TextCursorX = (int)fc.parameters[0].source;
+                    TextCursorY = (int)fc.parameters[1].source;
+                } else
+                if(fc.Name == "DrawText") {
+                    Color[] colors = display.GetPixels();
+                    string text = (string)fc.parameters[0].source;
+                    for(int t = 0; t < text.Length; t++) {
+                        byte b = (byte)(Converter.IndexOf(char.ToUpper(text[t])));
+                        if(b > 127) {
+                            b = 0;
+                        }
+                        int readb = 2 + b * 3;
 
-                    for(int x = 0; x < width; x++) {
-                        for(int y = 0; y < height; y++) {
-                            if((BitmapFont[readb + x] >> y & 1) == 1) {
-                                if((TextCursorX + x + (width + 1) * t) < display.width) {
-                                    colors[(TextCursorX + x + (width + 1) * t) + (display.height - (TextCursorY + y)) * display.width] = CurrentColor;
+                        byte width = BitmapFont[0];
+                        byte height = BitmapFont[1];
+
+                        for(int x = 0; x < width; x++) {
+                            for(int y = 0; y < height; y++) {
+                                if((BitmapFont[readb + x] >> y & 1) == 1) {
+                                    if((TextCursorX + x + (width + 1) * t) < display.width) {
+                                        colors[(TextCursorX + x + (width + 1) * t) + (display.height - (TextCursorY + y)) * display.width] = CurrentColor;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                display.SetPixels(colors);
-                UpdateScreen();
-            } else
-            if(fc.Name == "DrawPixel") {
-                display.SetPixel(
-                    (int)fc.parameters[0].source,
-                    display.height-(int)fc.parameters[1].source,
-                    CurrentColor
-                );
-                UpdateScreen();
-            } else
-            if(fc.Name == "DrawFilledRect") {
-                Color[] colors = display.GetPixels();
-                for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
-                    for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
-                        if(x < display.width) {
-                            colors[x + (display.height - y - 1) * display.width] = CurrentColor;
-                        }
-                    }
-                }
-                display.SetPixels(colors);
-                UpdateScreen();
-            } else
-            if(fc.Name == "DrawRect") {
-                Color[] colors = display.GetPixels();
-                for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
-                    for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
-                        if(x == (int)fc.parameters[0].source || x == (int)fc.parameters[2].source - 1 || y == (int)fc.parameters[1].source || y == (int)fc.parameters[3].source - 1) {
+                    display.SetPixels(colors);
+                    UpdateScreen();
+                } else
+                if(fc.Name == "DrawPixel") {
+                    display.SetPixel(
+                        (int)fc.parameters[0].source,
+                        display.height - (int)fc.parameters[1].source,
+                        CurrentColor
+                    );
+                    UpdateScreen();
+                } else
+                if(fc.Name == "DrawFilledRect") {
+                    Color[] colors = display.GetPixels();
+                    for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
+                        for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
                             if(x < display.width) {
                                 colors[x + (display.height - y - 1) * display.width] = CurrentColor;
                             }
                         }
                     }
+                    display.SetPixels(colors);
+                    UpdateScreen();
+                } else
+                if(fc.Name == "DrawRect") {
+                    Color[] colors = display.GetPixels();
+                    for(int x = (int)fc.parameters[0].source; x < (int)fc.parameters[2].source; x++) {
+                        for(int y = (int)fc.parameters[1].source; y < (int)fc.parameters[3].source; y++) {
+                            if(x == (int)fc.parameters[0].source || x == (int)fc.parameters[2].source - 1 || y == (int)fc.parameters[1].source || y == (int)fc.parameters[3].source - 1) {
+                                if(x < display.width) {
+                                    colors[x + (display.height - y - 1) * display.width] = CurrentColor;
+                                }
+                            }
+                        }
+                    }
+                    display.SetPixels(colors);
+                    UpdateScreen();
+                } else
+                if(fc.Name == "DrawLine") {
+                    display.SetPixels(DrawLine(
+                        (int)fc.parameters[0].source,
+                        (int)fc.parameters[1].source,
+                        (int)fc.parameters[2].source,
+                        (int)fc.parameters[3].source,
+                        display.GetPixels(),
+                        display.width,
+                        display.height,
+                        CurrentColor
+                    ));
+                    UpdateScreen();
                 }
-                display.SetPixels(colors);
-                UpdateScreen();
-            } else
-            if(fc.Name == "DrawLine") {
-                display.SetPixels(DrawLine(
-                    (int)fc.parameters[0].source,
-                    (int)fc.parameters[1].source,
-                    (int)fc.parameters[2].source,
-                    (int)fc.parameters[3].source,
-                    display.GetPixels(),
-                    display.width,
-                    display.height,
-                    CurrentColor
-                ));
-                UpdateScreen();
+                i = pr;
             }
-            i = pr;
         }
 
         int tactileX = Mathf.FloorToInt(TouchUVs.x * display.width);

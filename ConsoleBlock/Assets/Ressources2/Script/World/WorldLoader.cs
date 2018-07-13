@@ -5,11 +5,17 @@ using System.Threading;
 using System;
 using System.IO;
 
+using FastNoiseLibrary;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 
 public class WorldLoader : MonoBehaviour {
+
+    public List<Transform> CollisionTrackerList = new List<Transform>();
+
+    public Transform UnderwaterEffect;
+    public bool EnableCollider = false;
 
 	public WorldParameters UniversalWorldParameters;
 	public Structure[] Structures;
@@ -166,23 +172,41 @@ public class WorldLoader : MonoBehaviour {
 
 	Vector3 PlayerBlockPos;
 
-	void Update () {
-		DebugingText[0].text = worldManager.GetTerrainTemperature(Player.transform.position.x,Player.transform.position.z).ToString() + " : " + worldManager.GetTerrainHumidity(Player.transform.position.x,Player.transform.position.z).ToString();
+    private void FixedUpdate () {
+        if(InputControl.GetInput(InputControl.InputType.MouvementJump)) {
+            if(Player.transform.position.y < -20) {
+                PlayerBody.velocity = new Vector3(PlayerBody.velocity.x, Mathf.Max(PlayerBody.velocity.y, 8f), PlayerBody.velocity.z);
+            }
+        } else {
+            if(Player.transform.position.y < -20) {
+                PlayerBody.velocity += (Mathf.Abs(Mathf.Min(PlayerBody.velocity.y * 0.1f, 0f)) + 0.2f) * Vector3.up;
+                PlayerBody.velocity = new Vector3(PlayerBody.velocity.x, Mathf.Clamp(PlayerBody.velocity.y, Mathf.NegativeInfinity, 80f), PlayerBody.velocity.z);
+            }
+        }
+    }
+
+    void Update () {
+        //DebugingText[0].text = worldManager.GetTerrainTemperature(Player.transform.position.x,Player.transform.position.z).ToString() + " : " + worldManager.GetTerrainHumidity(Player.transform.position.x,Player.transform.position.z).ToString();
+        if(DebuggingMode) {
+            if(Input.GetKeyDown(KeyCode.H)) {
+                Player.position = new Vector3(UnityEngine.Random.Range(0f, 8192), 100f, UnityEngine.Random.Range(0f, 8192));
+            }
+            if(Input.GetKeyDown(KeyCode.J)) {
+                DebugLocation(Mathf.RoundToInt(Player.transform.position.x), Mathf.RoundToInt(Player.transform.position.z));
+            }
+        }
 
 		//Debugging
 		if(!IsUpdatingCollision) {
 			StartCoroutine(UpdateCollision());
-			DebugingText[0].text = worldManager.NaNError;
+			/*DebugingText[0].text = worldManager.NaNError;
 			DebugingImages[0].fillAmount = worldManager.DebugNumbers[0];
 			DebugingImages[1].fillAmount = worldManager.DebugNumbers[1];
-			DebugingImages[2].fillAmount = worldManager.DebugNumbers[2];
+			DebugingImages[2].fillAmount = worldManager.DebugNumbers[2];*/
 		}
 
 		//Water Physics Simulation (Temporary)
-		if(Player.transform.position.y < -17) {
-			//PlayerBody.velocity = Vector3.up * 2.5f;
-			//PlayerBody.velocity = new Vector3(PlayerBody.velocity.x,Mathf.Clamp(PlayerBody.velocity.y,Mathf.NegativeInfinity,40f),PlayerBody.velocity.z);
-		}
+        UnderwaterEffect.position = new Vector3(Player.position.x, Mathf.Clamp(Player.position.y, Mathf.NegativeInfinity, -21), Player.position.z);
 
 		PlayerBlockPos = new Vector3(Mathf.Floor(Player.transform.position.x),Mathf.Floor(Player.transform.position.y),Mathf.Floor(Player.transform.position.z));
 
@@ -197,7 +221,7 @@ public class WorldLoader : MonoBehaviour {
 					Difference = Height - Player.transform.position.y;
 
 					Colliders[index].position = new Vector3(PlayerBlockPos.x+x,Height,PlayerBlockPos.z+y);
-					Colliders[index].localScale = new Vector3(1,Mathf.Clamp(Mathf.Abs(Difference),1f,Mathf.Infinity)*16,1);
+					Colliders[index].localScale = new Vector3(1,Mathf.Clamp(Mathf.Abs(Difference)+16,1f,Mathf.Infinity)*2,1);
 
 					index++;
 				}
@@ -262,8 +286,50 @@ public class WorldLoader : MonoBehaviour {
 		IsUpdatingCollision = false;
 	}
 
-	//Debugging
-	void OnDrawGizmos () {
+    FastNoise fn = new FastNoise();
+
+    void DebugLocation (int x, int y) {
+        WorldParameters wp = UniversalWorldParameters;
+        float DistorsionX = Mathf.Lerp(-wp.FrequencyDistortionRange, wp.FrequencyDistortionRange, Mathf.PerlinNoise(x * wp.FrequencyDistortionFreq, y * wp.FrequencyDistortionFreq));
+        float DistorsionY = Mathf.Lerp(-wp.FrequencyDistortionRange, wp.FrequencyDistortionRange, Mathf.PerlinNoise(x * wp.FrequencyDistortionFreq + 90, y * wp.FrequencyDistortionFreq + 50));
+
+        float Distorsion2X = Mathf.Lerp(-wp.FrequencyDistortion2Range, wp.FrequencyDistortion2Range, Mathf.PerlinNoise(x * wp.FrequencyDistortion2Freq + DistorsionX, y * wp.FrequencyDistortion2Freq + DistorsionY));
+        float Distorsion2Y = Mathf.Lerp(-wp.FrequencyDistortion2Range, wp.FrequencyDistortion2Range, Mathf.PerlinNoise(x * wp.FrequencyDistortion2Freq + DistorsionX + 90, y * wp.FrequencyDistortion2Freq + DistorsionY + 50));
+
+        float Distorsion3X = Mathf.Lerp(-wp.FrequencyDistortion3Range, wp.FrequencyDistortion3Range, Mathf.PerlinNoise(x * wp.FrequencyDistortion3Freq + Distorsion2X, y * wp.FrequencyDistortion3Freq + Distorsion2Y));
+        float Distorsion3Y = Mathf.Lerp(-wp.FrequencyDistortion3Range, wp.FrequencyDistortion3Range, Mathf.PerlinNoise(x * wp.FrequencyDistortion3Freq + Distorsion2X + 90, y * wp.FrequencyDistortion3Freq + Distorsion2Y + 50));
+
+        float Frequency = Mathf.Lerp(wp.Frequency + Distorsion3X, wp.Frequency + Distorsion3Y, Mathf.PerlinNoise(x * wp.FrequencyFreq, y * wp.FrequencyFreq));
+
+        float Amplitude = Mathf.Lerp(wp.AmplitudeMin, wp.AmplitudeMax, Mathf.PerlinNoise(x * wp.AmplitudeFreq, y * wp.AmplitudeFreq));
+        float Lacunarity = Mathf.Lerp(wp.LacunarityMin, wp.LacunarityMax, Mathf.PerlinNoise(x * wp.LacunarityFreq, y * wp.LacunarityFreq));
+
+        float AltitudeErosion = Mathf.Lerp(wp.AltitudeErosionMin, wp.AltitudeErosionMax, Mathf.PerlinNoise(x * wp.AltitudeErosionFreq, y * wp.AltitudeErosionFreq));
+        float RidgeErosion = Mathf.Lerp(wp.RidgeErosionMin, wp.RidgeErosionMax, Mathf.PerlinNoise(x * wp.RidgeErosionFreq, y * wp.RidgeErosionFreq));
+        float SlopeErosion = Mathf.Lerp(wp.SlopeErosionMin, wp.SlopeErosionMax, Mathf.PerlinNoise(x * wp.SlopeErosionFreq, y * wp.SlopeErosionFreq));
+
+        float Gain = Mathf.Lerp(wp.GainMin, wp.GainMax, Mathf.PerlinNoise(x * wp.GainFreq, y * wp.GainFreq));
+
+        float Sharpness = Mathf.Lerp(wp.SharpnessMin, wp.SharpnessMax, Mathf.SmoothStep(0, 1f, Mathf.PerlinNoise(x * wp.SharpnessFreq, y * wp.SharpnessFreq)));
+        //float FeatureAmplifier = Mathf.Lerp(0f, 0.09f, Mathf.PerlinNoise(x*0.0043f,y*0.0043f));
+
+        float[] octfeatureamplifer = new float[8];
+        for(int i = 0; i < 8; i++) {
+            octfeatureamplifer[i] = Mathf.Lerp(wp.OctavesParams[i].FeatureAmplifierMin, wp.OctavesParams[i].FeatureAmplifierMax, Mathf.PerlinNoise(x * wp.OctavesParams[i].FeatureAmplifierFreq, y * wp.OctavesParams[i].FeatureAmplifierFreq));
+        }
+
+        XnaGeometry.Vector3 n = OTNM.Tools.Accessing.GetUberNoise(new XnaGeometry.Vector2(x * Frequency, y * Frequency), fn, 0, 8, Sharpness, octfeatureamplifer, AltitudeErosion, RidgeErosion, SlopeErosion, Lacunarity, Gain, wp.SlopeGainKeeper) * Amplitude;
+        Debug.Log("--DEBUG NOISE PROGRAM--");
+        Debug.Log("RESULTS: nx(" + n.x + "), ny(" + n.y + "), nz(" + n.z + ")");
+        Debug.Log("SEED: " + 0);
+        Debug.Log("OCTAVES: " + 8);
+        Debug.Log("TERRAIN SHAPES: altErosion(" + AltitudeErosion + "), ridgeErosion(" + RidgeErosion + "), slopeErosion(" + SlopeErosion + ")");
+        Debug.Log("MAIN NOISE PARAMETERS: gain(" + Gain + "), lacunarity(" + Lacunarity + "), ampl(" + Amplitude + ", baseFreq(" + Frequency + ")");
+
+    }
+
+    //Debugging
+    void OnDrawGizmos () {
 		if(!Application.isPlaying) {
 			return;
 		}
@@ -422,7 +488,7 @@ public class WorldLoader : MonoBehaviour {
 		if(!UpdateOnly) {
 			if(GarbadgeChunkList.Count < 1) {
                 if(MaxChunkAllowed > ChunkList.Count) {
-                    ChunkList.Add(new Chunk(RequiredChunkList[0].Position, RequiredChunkList[0].LOD,SimulatedChunkSize, worldTextures, worldManager, MeshTemplate, false));
+                    ChunkList.Add(new Chunk(RequiredChunkList[0].Position, RequiredChunkList[0].LOD,SimulatedChunkSize, worldTextures, worldManager, MeshTemplate, EnableCollider));
                     ChunkIndex = -1;
                     UpdateOnly = true;
                 } else {
@@ -440,7 +506,7 @@ public class WorldLoader : MonoBehaviour {
 		}
 
         if(ChunkIndex != -1) {
-            ChunkList[ChunkIndex].ReconditionMesh(RequiredChunkList[0].Position, RequiredChunkList[0].LOD, false);
+            ChunkList[ChunkIndex].ReconditionMesh(RequiredChunkList[0].Position, RequiredChunkList[0].LOD, EnableCollider);
         } else {
             ChunkIndex = ChunkList.Count - 1;
         }

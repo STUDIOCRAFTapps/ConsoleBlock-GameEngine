@@ -25,6 +25,8 @@ public class ConsoleUI : DefaultUI {
     public GameObject[] Tabs;
     string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
 
+    public Text[] PPS_Values;
+
     bool anyKeyHold;
     int CursorPosition = -1;
 
@@ -33,6 +35,14 @@ public class ConsoleUI : DefaultUI {
         nameInputField.text = Target.Name;
 
         UpdateFunctionExecutionTabs();
+
+        PPS_Values[0].text = Target.ComsumePPS.ToString();
+        PPS_Values[1].text = Target.PPSComsumption.ToString();
+        if(Target.PowerSource != null) {
+            PPS_Values[2].text = Target.PowerSource.Name;
+        } else {
+            PPS_Values[2].text = "Null";
+        }
     }
 
     public void CreateGlobalVariableTemplate () {

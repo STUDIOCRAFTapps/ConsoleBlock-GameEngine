@@ -42,6 +42,12 @@ public class JoystickScript : WInteractable {
             TargetRotation = Vector2.zero;
         }
         CurrentRotation = Vector2.Lerp(CurrentRotation, TargetRotation, 0.1f);
+        if(CurrentRotation.x > 0.98f) {
+            CurrentRotation.x = 1f;
+        }
+        if(CurrentRotation.y > 0.98f) {
+            CurrentRotation.y = 1f;
+        }
         Handle.localEulerAngles = new Vector3(CurrentRotation.x*17,0,CurrentRotation.y*17);
 
         IsSelected = false;

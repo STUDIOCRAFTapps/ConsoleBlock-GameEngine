@@ -68,19 +68,24 @@ public class ConsoleScript : WInteractable {
     }
 
     void Start () {
+        ComsumePPS = !InfinitePPSFilling;
+        PPSComsumption = 7.0f;
+
         StartCoroutine(OnCompilation());
     }
 
     override public void Update () {
-        for(int i = 0; i < FunctionCall.Count; i++) {
-            FunctionCaller fc = FunctionCall[0];
-            FunctionCall.RemoveAt(0);
+        if(CanExecuteCode()) {
+            for(int i = 0; i < FunctionCall.Count; i++) {
+                FunctionCaller fc = FunctionCall[0];
+                FunctionCall.RemoveAt(0);
 
-            if(GlobalFunctionNames.Contains(fc.Name)) {
-                StartCoroutine(ExecuteFunction(fc.Name, fc.parameters));
+                if(GlobalFunctionNames.Contains(fc.Name)) {
+                    StartCoroutine(ExecuteFunction(fc.Name, fc.parameters));
+                }
             }
+            StartCoroutine(OnScriptExecution());
         }
-        StartCoroutine(OnScriptExecution());
     }
 
     public IEnumerator OnCompilation () {

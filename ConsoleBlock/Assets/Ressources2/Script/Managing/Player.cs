@@ -7,9 +7,10 @@ using UnityStandardAssets.Characters.FirstPerson;
 public class Player : MonoBehaviour {
 
     public Rigidbody playerRigidbody;
-    public RigidbodyFirstPersonController controller;
+    public PlayerController controller;
     public bool IsUICurrentlyOpened = false;
     public bool ForcedMouvementFreeze;
+    public bool ForcedCompleteMotionFreeze;
 
     public UIManager uiManager;
     public BuildingManager buildingManager;
@@ -17,32 +18,45 @@ public class Player : MonoBehaviour {
     public bool SpecificTypeModeActive = false;
     public SpecificTypeModes SpecificTypeMode;
     public Image SpecificTypeModeOverlay;
-
     public InventoryUI inventory;
 
     WInteractable linksource;
+    WInteractable linksourcePower;
+    public ProjectileLauncherScript projectileLauncher;
+
+    public bool EnableInfintePPSFilling = true;
 
     void Start () {
-
+        buildingManager.player = this;
     }
 
     void Update () {
-        //TODO: Inventory and stuff like that
+        if(Input.GetKeyDown(KeyCode.G)) {
+            projectileLauncher.gameObject.SetActive(!projectileLauncher.gameObject.activeSelf);
+        }
         if(ForcedMouvementFreeze) {
-            controller.GetComponent<Rigidbody>().isKinematic = true;
+            controller.FreezeMouvement = true;
             ForcedMouvementFreeze = false;
 
         } else {
-            controller.GetComponent<Rigidbody>().isKinematic = false;
+            controller.FreezeMouvement = false;
+        }
+        if(ForcedCompleteMotionFreeze) {
+            playerRigidbody.isKinematic = true;
+            ForcedCompleteMotionFreeze = false;
+
+        } else {
+            playerRigidbody.isKinematic = false;
         }
         if(IsUICurrentlyOpened) {
-            //Hide/Show building widget/inventory
+            //Hide/Show building widget/inventory ?
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
-            if(controller.enabled == true) {
-                controller.enabled = false;
-            }
+            controller.FreezeMouvement = true;
+            controller.FreezeCamera = true;
             return;
+        } else {
+            controller.FreezeCamera = false;
         }
 
         if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
@@ -97,6 +111,12 @@ public class Player : MonoBehaviour {
             if(SpecificTypeMode == SpecificTypeModes.Link) {
                 SpecificTypeModeOverlay.color = new Color(0.8f, 1f, 0.8f, 0.6f);
             }
+            if(SpecificTypeMode == SpecificTypeModes.PowerComsumeLink) {
+                SpecificTypeModeOverlay.color = new Color(1f, 0f, 0.55f, 0.6f);
+            }
+            if(SpecificTypeMode == SpecificTypeModes.PowerGenerationLink) {
+                SpecificTypeModeOverlay.color = new Color(1f, 0f, 0.25f, 0.6f);
+            }
         }
 
         Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
@@ -109,10 +129,11 @@ public class Player : MonoBehaviour {
                         if(interactable != null && interactable != linksource) {
                             if(interactable.transmitter.sources.Contains(linksource)) {
                                 interactable.transmitter.sources.Remove(linksource);
-                            } else {
                                 if(linksource.transmitter.sources.Contains(interactable)) {
                                     linksource.transmitter.sources.Remove(interactable);
-                                } else {
+                                }
+                            } else {
+                                if(!linksource.transmitter.sources.Contains(interactable)) {
                                     linksource.transmitter.sources.Add(interactable);
                                     interactable.transmitter.sources.Add(linksource);
                                 }
@@ -124,6 +145,49 @@ public class Player : MonoBehaviour {
                         linksource = hit.collider.GetComponent<WInteractableCaller>().Call();
                         if(linksource != null) {
                             SpecificTypeMode = SpecificTypeModes.Link;
+                            SpecificTypeModeActive = true;
+                        }
+                    }
+                } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.PowerInput) {
+                    if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.PowerGenerationLink) {
+                        WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
+                        if(interactable.PowerSource == linksourcePower) {
+                            interactable.PowerSource = null;
+                        } else {
+                            interactable.PowerSource = linksourcePower;
+                        }
+                        SpecificTypeModeActive = false;
+                    } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.PowerComsumeLink) {
+                        linksourcePower = null;
+                        SpecificTypeModeActive = false;
+                    } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !SpecificTypeModeActive) {
+                        linksourcePower = hit.collider.GetComponent<WInteractableCaller>().Call();
+                        if(linksourcePower != null) {
+                            SpecificTypeMode = SpecificTypeModes.PowerComsumeLink;
+                            SpecificTypeModeActive = true;
+                        }
+                    }
+                } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.PowerOutput) {
+                    if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.PowerGenerationLink) {
+                        linksourcePower = null;
+                        SpecificTypeModeActive = false;
+                        SpecificTypeModeActive = false;
+                    } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.PowerComsumeLink) {
+                        WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
+                        if(linksourcePower.PowerSource == null) {
+                            linksourcePower.PowerSource = interactable;
+                        } else {
+                            if(interactable != linksourcePower.PowerSource) {
+                                linksourcePower.PowerSource = interactable;
+                            } else {
+                                linksourcePower.PowerSource = null;
+                            }
+                        }
+                        SpecificTypeModeActive = false;
+                    } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !SpecificTypeModeActive) {
+                        linksourcePower = hit.collider.GetComponent<WInteractableCaller>().Call();
+                        if(linksourcePower != null) {
+                            SpecificTypeMode = SpecificTypeModes.PowerGenerationLink;
                             SpecificTypeModeActive = true;
                         }
                     }
@@ -181,6 +245,7 @@ public class Player : MonoBehaviour {
 
     public enum SpecificTypeModes {
         Link,
-        PowerLink
+        PowerComsumeLink,
+        PowerGenerationLink
     }
 }

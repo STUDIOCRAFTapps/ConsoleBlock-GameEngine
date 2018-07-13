@@ -10,7 +10,7 @@ public class WInteractableCaller : MonoBehaviour {
     public WInteractable Call () {
         if(callType == CallType.TactileInteraction) {
             return null;
-        } else if(callType == CallType.Transmition || callType == CallType.PowerOuput || callType == CallType.PowerInput) {
+        } else if(callType == CallType.Transmition || callType == CallType.PowerOutput || callType == CallType.PowerInput) {
             return interactable;
         } else {
             return null;
@@ -59,5 +59,5 @@ public enum CallType {
     PointedAt,
     Transmition,
     PowerInput,
-    PowerOuput
+    PowerOutput
 }
