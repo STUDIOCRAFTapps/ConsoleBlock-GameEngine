@@ -49,7 +49,7 @@ public class GrabberController : MonoBehaviour {
 			StartCoroutine(ReplacePlayer());
 		}
 		if(Fly) {
-			PlayerRigidb.velocity = new Vector3(PlayerRigidb.velocity.x,25f,PlayerRigidb.velocity.z);
+			PlayerRigidb.velocity = new Vector3(PlayerRigidb.velocity.x,5f,PlayerRigidb.velocity.z);
 			Player.position += Vector3.up*30f*Time.deltaTime;
 		}
 	}

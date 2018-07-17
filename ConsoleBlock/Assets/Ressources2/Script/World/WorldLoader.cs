@@ -12,7 +12,10 @@ using UnityEngine.UI;
 
 public class WorldLoader : MonoBehaviour {
 
-    public List<Transform> CollisionTrackerList = new List<Transform>();
+    public List<Transform> CollisionTrackerListRay = new List<Transform>();
+    public List<Transform> CollisionTrackerListPO = new List<Transform>();
+    public GameObject CollisionPrefab;
+    public List<BuildingBlock> PhysicObjectTracker = new List<BuildingBlock>();
 
     public Transform UnderwaterEffect;
     public bool EnableCollider = false;
@@ -126,7 +129,7 @@ public class WorldLoader : MonoBehaviour {
 				}
 			}
 		}
-	}
+    }
 
 	int DistanceToLOD (float Distance) {
 		if(Distance <= LOD0EndChunkDistance) {
@@ -173,19 +176,29 @@ public class WorldLoader : MonoBehaviour {
 	Vector3 PlayerBlockPos;
 
     private void FixedUpdate () {
+
+        if(!IsUpdatingCollision) {
+            StartCoroutine(UpdateCollision());
+            //UpdateCollisionFix();
+            //Next thing: Detect the direction and origin of the camera ray and pool/generate next colliders to fullfil the ray
+            //After that: Check in all physics building block (And distance detector?!) which 2x2 blocks need support and make sure two of the same colliders pos aren't overlapping
+        }
+
         if(InputControl.GetInput(InputControl.InputType.MouvementJump)) {
-            if(Player.transform.position.y < -20) {
-                PlayerBody.velocity = new Vector3(PlayerBody.velocity.x, Mathf.Max(PlayerBody.velocity.y, 8f), PlayerBody.velocity.z);
+            if(Player.transform.position.y < -19) {
+                PlayerBody.velocity = new Vector3(PlayerBody.velocity.x, Mathf.Max(Mathf.Min(PlayerBody.velocity.y + 1f, 8f), PlayerBody.velocity.y), PlayerBody.velocity.z);
             }
         } else {
-            if(Player.transform.position.y < -20) {
-                PlayerBody.velocity += (Mathf.Abs(Mathf.Min(PlayerBody.velocity.y * 0.1f, 0f)) + 0.2f) * Vector3.up;
+            if(Player.transform.position.y < -19) {
+                PlayerBody.velocity += (Mathf.Abs(Mathf.Min(PlayerBody.velocity.y * 0.1f, 0f)) + 0.1f) * Vector3.up;
                 PlayerBody.velocity = new Vector3(PlayerBody.velocity.x, Mathf.Clamp(PlayerBody.velocity.y, Mathf.NegativeInfinity, 80f), PlayerBody.velocity.z);
             }
         }
     }
 
     void Update () {
+        StartCoroutine(UpdateRaycollision());
+
         //DebugingText[0].text = worldManager.GetTerrainTemperature(Player.transform.position.x,Player.transform.position.z).ToString() + " : " + worldManager.GetTerrainHumidity(Player.transform.position.x,Player.transform.position.z).ToString();
         if(DebuggingMode) {
             if(Input.GetKeyDown(KeyCode.H)) {
@@ -197,16 +210,9 @@ public class WorldLoader : MonoBehaviour {
         }
 
 		//Debugging
-		if(!IsUpdatingCollision) {
-			StartCoroutine(UpdateCollision());
-			/*DebugingText[0].text = worldManager.NaNError;
-			DebugingImages[0].fillAmount = worldManager.DebugNumbers[0];
-			DebugingImages[1].fillAmount = worldManager.DebugNumbers[1];
-			DebugingImages[2].fillAmount = worldManager.DebugNumbers[2];*/
-		}
 
 		//Water Physics Simulation (Temporary)
-        UnderwaterEffect.position = new Vector3(Player.position.x, Mathf.Clamp(Player.position.y, Mathf.NegativeInfinity, -21), Player.position.z);
+        UnderwaterEffect.position = new Vector3(Player.position.x, Mathf.Clamp(Player.position.y, Mathf.NegativeInfinity, -22.8f), Player.position.z);
 
 		PlayerBlockPos = new Vector3(Mathf.Floor(Player.transform.position.x),Mathf.Floor(Player.transform.position.y),Mathf.Floor(Player.transform.position.z));
 
@@ -233,11 +239,11 @@ public class WorldLoader : MonoBehaviour {
 			NewChunkPos = new Vector2(Mathf.Floor(Player.position.x/SimulatedChunkSize),Mathf.Floor(Player.position.z/SimulatedChunkSize));
 		}
 
-		if(Input.GetKeyDown(KeyCode.R)) {
+		if(Input.GetKeyDown(KeyCode.K)) {
 			StartCoroutine(CleanUp());
 		}
 
-		if(((Mathf.Abs(OldChunkPos.x - NewChunkPos.x) + Mathf.Abs(OldChunkPos.y - NewChunkPos.y)) > 2) || !worldinitialized || Input.GetKeyDown(KeyCode.R)) {
+		if(((Mathf.Abs(OldChunkPos.x - NewChunkPos.x) + Mathf.Abs(OldChunkPos.y - NewChunkPos.y)) > 2) || !worldinitialized) {
 			worldinitialized = true;
 			StartCoroutine(PrepareChunkLoading());
 		}
@@ -264,6 +270,38 @@ public class WorldLoader : MonoBehaviour {
 	float[,] PHeightValues;
 	float[,] HeightValues;
 	Thread WaitForCollisionData;
+
+    IEnumerator UpdateRaycollision () {
+        List<Vector2> ExecutionList = new List<Vector2>();
+        List<float> PointsHeightMapValues = new List<float>();
+        Vector2 DecimalPlayerPos = new Vector2(Player.position.x, Player.position.z);
+        Vector2 Direction = new Vector2(Player.GetComponent<PlayerController>().Head.forward.x, Player.GetComponent<PlayerController>().Head.forward.z);
+
+        Action RetrieveRayHeightValues = () => {
+            for(int i = 0; i < 48; i++) {
+                Vector2 v = new Vector2(Mathf.Floor(DecimalPlayerPos.x), Mathf.Floor(DecimalPlayerPos.y));
+                if(!ExecutionList.Contains(v)) {
+                    PointsHeightMapValues.Add(worldManager.GetHeightMap(v.x, v.y)[0]);
+                    ExecutionList.Add(v);
+                }
+                DecimalPlayerPos += Direction;
+            }
+        };
+        WaitForCollisionData = new Thread(new ThreadStart(RetrieveRayHeightValues));
+        WaitForCollisionData.Priority = System.Threading.ThreadPriority.AboveNormal;
+        WaitForCollisionData.Start();
+        yield return new WaitUntil(() => !WaitForCollisionData.IsAlive);
+
+        foreach(Transform t in CollisionTrackerListRay) {
+            t.gameObject.SetActive(false);
+        }
+        for(int i = 0; i < ExecutionList.Count; i++) {
+            Transform col = GetColliderRay();
+            col.position = new Vector3(ExecutionList[i].x, PointsHeightMapValues[i], ExecutionList[i].y);
+            col.localScale = new Vector3(1, Mathf.Max(Mathf.Abs(PointsHeightMapValues[i] - Player.position.y) + 50, 1f), 1f);
+        }
+    }
+
 	IEnumerator UpdateCollision () {
 		IsUpdatingCollision = true;
 		PHeightValues = new float[3,3];
@@ -277,14 +315,93 @@ public class WorldLoader : MonoBehaviour {
 				}
 			}
 		};
-
 		WaitForCollisionData = new Thread(new ThreadStart(WaitForValue));
-		WaitForCollisionData.Start();
+        WaitForCollisionData.Priority = System.Threading.ThreadPriority.AboveNormal;
+        WaitForCollisionData.Start();
 		yield return new WaitUntil(() => !WaitForCollisionData.IsAlive);
 
-		HeightValues = PHeightValues;
+        List<Vector2> ExecutionList = new List<Vector2>();
+        List<float> PointsHeightMapValues = new List<float>();
+        List<Vector2> Positions = new List<Vector2>();
+
+        for(int x = 0; x < PhysicObjectTracker.Count; x++) {
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0.5f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 0.5f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0.5f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 0.5f)));
+            for(int i = 0; i < PhysicObjectTracker[x].Childs.Count; i++) {
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0.5f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 0.5f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0.5f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 0.5f)));
+            }
+        }
+
+        Action RetrieveHeightValues = () => {
+            int c = 0;
+            for(int x = 0; x < PhysicObjectTracker.Count; x++) {
+                for(int x2 = 0; x2 < 4; x2++) {
+                    Vector2 vM = Positions[c];
+                    if(!ExecutionList.Contains(vM)) {
+                        PointsHeightMapValues.Add(worldManager.GetHeightMap(vM.x, vM.y)[0]);
+                        ExecutionList.Add(vM);
+                    }
+                    c++;
+                }
+                for(int i = 0; i < PhysicObjectTracker[x].Childs.Count; i++) {
+                    for(int x2 = 0; x2 < 4; x2++) {
+                        Vector2 v = Positions[c];
+                        if(!ExecutionList.Contains(v)) {
+                            PointsHeightMapValues.Add(worldManager.GetHeightMap(v.x, v.y)[0]);
+                            ExecutionList.Add(v);
+                        }
+                        c++;
+                    }
+                }
+            }
+        };
+        WaitForCollisionData = new Thread(new ThreadStart(RetrieveHeightValues));
+        WaitForCollisionData.Priority = System.Threading.ThreadPriority.AboveNormal;
+        WaitForCollisionData.Start();
+        yield return new WaitUntil(() => !WaitForCollisionData.IsAlive);
+
+        foreach(Transform t in CollisionTrackerListPO) {
+            t.gameObject.SetActive(false);
+        }
+        for(int i = 0; i < ExecutionList.Count; i++) {
+            Debug.Log("HEY");
+            Transform col = GetColliderPO();
+            col.position = new Vector3(ExecutionList[i].x, PointsHeightMapValues[i], ExecutionList[i].y);
+            col.localScale = new Vector3(1, 150f, 1f);
+        }
+
+        HeightValues = PHeightValues;
 		IsUpdatingCollision = false;
 	}
+
+    Transform GetColliderRay () {
+        foreach(Transform t in CollisionTrackerListRay) {
+            if(!t.gameObject.activeSelf) {
+                t.gameObject.SetActive(true);
+                return t;
+            }
+        }
+        GameObject ncol = GameObject.Instantiate(CollisionPrefab);
+        CollisionTrackerListRay.Add(ncol.transform);
+        return ncol.transform;
+    }
+
+    Transform GetColliderPO () {
+        foreach(Transform t in CollisionTrackerListPO) {
+            if(!t.gameObject.activeSelf) {
+                t.gameObject.SetActive(true);
+                return t;
+            }
+        }
+        GameObject ncol = GameObject.Instantiate(CollisionPrefab);
+        CollisionTrackerListPO.Add(ncol.transform);
+        return ncol.transform;
+    }
 
     FastNoise fn = new FastNoise();
 

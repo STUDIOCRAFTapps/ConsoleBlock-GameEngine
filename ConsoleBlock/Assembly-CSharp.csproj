@@ -193,7 +193,6 @@
     <Compile Include="Assets\Ressources2\Script\Unused\WorldGeneration3.cs" />
     <Compile Include="Assets\Ressources2\Script\Unused\ZoomFOV.cs" />
     <Compile Include="Assets\Ressources2\Script\World\Biome.cs" />
-    <Compile Include="Assets\Ressources2\Script\World\BlockyTreeCreator.cs" />
     <Compile Include="Assets\Ressources2\Script\World\Chunk.cs" />
     <Compile Include="Assets\Ressources2\Script\World\ChunkOcclusion.cs" />
     <Compile Include="Assets\Ressources2\Script\World\ChunkParameters.cs" />
@@ -209,7 +208,6 @@
     <Compile Include="Assets\Ressources2\Script\World\StructureGroup.cs" />
     <Compile Include="Assets\Ressources2\Script\World\SubBiome.cs" />
     <Compile Include="Assets\Ressources2\Script\World\SubWorldTexture.cs" />
-    <Compile Include="Assets\Ressources2\Script\World\WaterOffset.cs" />
     <Compile Include="Assets\Ressources2\Script\World\WorldCreator.cs" />
     <Compile Include="Assets\Ressources2\Script\World\WorldLoader.cs" />
     <Compile Include="Assets\Ressources2\Script\World\WorldManager.cs" />

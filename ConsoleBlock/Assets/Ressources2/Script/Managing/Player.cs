@@ -14,6 +14,7 @@ public class Player : MonoBehaviour {
 
     public UIManager uiManager;
     public BuildingManager buildingManager;
+    public WorldLoader loader;
 
     public bool SpecificTypeModeActive = false;
     public SpecificTypeModes SpecificTypeMode;

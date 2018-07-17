@@ -6,6 +6,7 @@ public class BuildingBlock : WObject {
 
     public BlockType blockType;
     public Vector3 mainDirection;
+    public AnchorConfigurator anchorConfigurator;
     public List<WObject> Childs = new List<WObject>();
 
     public bool ContainsChildOfSameType (Vector3 position, Vector3 rotation, BlockType blockType) {
@@ -34,4 +35,8 @@ public class BuildingBlock : WObject {
         Anchor
     }
 
+    public enum AnchorConfigurator {
+        LocalBased,
+        GlobalBased
+    }
 }

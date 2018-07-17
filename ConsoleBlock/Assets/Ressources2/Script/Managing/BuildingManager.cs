@@ -348,26 +348,50 @@ public class BuildingManager : MonoBehaviour {
             if(bb.blockType == BuildingBlock.BlockType.Anchor) {
                 if(BuildingBlockType == BuildingBlock.BlockType.Floor) {
                     PlaceHolderFloor.eulerAngles = pr;
-                    PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y, hit);
+                    if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                        PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                    } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                        PlaceHolderFloor.position = pos + RelativeDirection(Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    }
                 }
                 if(BuildingBlockType == BuildingBlock.BlockType.Wall) {
                     if(v > -45 && v < 45) {
                         PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 0, 0));
-                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                        } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        }
                     } else if(v > 45 && v < 135) {
                         PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 90, 0));
-                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                        } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        }
                     } else if(v > 135 && v < 180 || v > -180 && v < -135) {
                         PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 0, 0));
-                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                        } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        }
                     } else if(v > -135 && v < -45) {
                         PlaceHolderWall.eulerAngles = RelativeEuler(pr, new Vector3(0, 90, 0));
-                        PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                        } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                            PlaceHolderWall.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                        }
                     }
                 }
                 if(BuildingBlockType == BuildingBlock.BlockType.Cube) {
                     PlaceHolderBlock.eulerAngles = pr;
-                    PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                    if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.GlobalBased) {
+                        PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.lossyScale.y * 0.5f, hit);
+                    } else if(bb.anchorConfigurator == BuildingBlock.AnchorConfigurator.LocalBased) {
+                        PlaceHolderBlock.position = pos + RelativeDirection(new Vector3(0, BlockSize / 2, 0) * bb.mainDirection.y + Vector3.up * bb.mainDirection.y * bb.transform.localScale.y * 0.5f, hit);
+                    }
                 }
             }
 
@@ -419,6 +443,8 @@ public class BuildingManager : MonoBehaviour {
                     obj.transform.GetChild(0).GetComponent<WObject>().Parent = hit.collider.GetComponent<BuildingBlock>().Parent;
                     hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.transform.GetChild(0).GetComponent<WObject>());
                 }
+            } else {
+                player.loader.PhysicObjectTracker.Add(obj.transform.GetChild(0).GetComponent<BuildingBlock>());
             }
         } else if((BuildingBlockType == BuildingBlock.BlockType.Cube || BuildingBlockType == BuildingBlock.BlockType.Floor) && hit.collider.name == "WCollider") {
             if(PlaceHolderBlock.position != Vector3.zero) {
@@ -466,6 +492,9 @@ public class BuildingManager : MonoBehaviour {
             }
         }
         if(hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
+            if(player.loader.PhysicObjectTracker.Contains(hit.collider.GetComponent<BuildingBlock>())) {
+                player.loader.PhysicObjectTracker.Remove(hit.collider.GetComponent<BuildingBlock>());
+            }
             hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Remove(hit.collider.GetComponent<BuildingBlock>());
             Destroy(hit.collider.gameObject);
         } else if(hit.collider.GetComponent<WObject>() != null) {
