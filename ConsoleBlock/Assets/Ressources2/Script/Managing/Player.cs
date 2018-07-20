@@ -27,11 +27,44 @@ public class Player : MonoBehaviour {
 
     public bool EnableInfintePPSFilling = true;
 
+    public bool IsPaused = false;
+    bool WasOpenedBefore = false;
+    bool BuildingModeOn = false;
+
     void Start () {
         buildingManager.player = this;
     }
 
     void Update () {
+        if(InputControl.GetInputDown(InputControl.InputType.Close)) {
+            IsPaused = !IsPaused;
+            if(IsPaused) {
+                WasOpenedBefore = IsUICurrentlyOpened;
+                Time.timeScale = 0.0f;
+                uiManager.PauseMenu.gameObject.SetActive(true);
+                uiManager.PauseMenuDropdowns[0].value = PlayerPrefs.GetInt("KeyboardType", 0);
+                uiManager.PauseMenuDropdowns[1].value = PlayerPrefs.GetInt("BuildingKeyType", 0);
+            } else {
+                IsUICurrentlyOpened = WasOpenedBefore;
+                Time.timeScale = 1.0f;
+                uiManager.PauseMenu.gameObject.SetActive(false);
+            }
+        }
+
+        if(IsPaused) {
+            IsUICurrentlyOpened = true;
+            PlayerPrefs.SetInt("KeyboardType", uiManager.PauseMenuDropdowns[0].value);
+            PlayerPrefs.SetInt("BuildingKeyType", uiManager.PauseMenuDropdowns[1].value);
+        }
+
+        if(PlayerPrefs.GetInt("BuildingKeyType", 0) == 0) {
+            BuildingModeOn = InputControl.GetInput(InputControl.InputType.BuildingMode);
+        } else {
+            if(!IsUICurrentlyOpened && InputControl.GetInputDown(InputControl.InputType.BuildingMode)) {
+                BuildingModeOn = !BuildingModeOn;
+            }
+        }
+
         if(Input.GetKeyDown(KeyCode.G)) {
             projectileLauncher.gameObject.SetActive(!projectileLauncher.gameObject.activeSelf);
         }
@@ -60,7 +93,7 @@ public class Player : MonoBehaviour {
             controller.FreezeCamera = false;
         }
 
-        if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
+        if(BuildingModeOn) {
             if(InputControl.GetInputDown(InputControl.InputType.BuildingChangeRotation)) {
                 uiManager.EditWidgetValue("Build_BlockRotation", -uiManager.GetWidgetValue("Build_BlockRotation"));
                 buildingManager.CurrentRotation = uiManager.GetWidgetValue("Build_BlockRotation");
@@ -123,7 +156,7 @@ public class Player : MonoBehaviour {
         Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
         RaycastHit hit;
         if(Physics.Raycast(ray, out hit)) {
-            if(hit.collider.GetComponent<WInteractableCaller>() != null && !InputControl.GetInput(InputControl.InputType.BuildingMode)) {
+            if(hit.collider.GetComponent<WInteractableCaller>() != null && !BuildingModeOn) {
                 if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.Transmition) {
                     if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && SpecificTypeModeActive && SpecificTypeMode == SpecificTypeModes.Link) {
                         WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
@@ -206,7 +239,7 @@ public class Player : MonoBehaviour {
                 } else if(hit.collider.GetComponent<WInteractableCaller>().callType == CallType.PointedAt) {
                     hit.collider.GetComponent<WInteractableCaller>().PointedAtCall(this);
                 }
-            } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !InputControl.GetInput(InputControl.InputType.BuildingMode)) {
+            } else if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress) && !BuildingModeOn) {
                 if(hit.collider.tag == "Interactable") {
                     WInteractable interactable = hit.collider.GetComponent<WInteractableCaller>().Call();
                     if(interactable != null) {
@@ -217,7 +250,7 @@ public class Player : MonoBehaviour {
                         }
                     }
                 }
-            } else if(InputControl.GetInput(InputControl.InputType.BuildingMode)) {
+            } else if(BuildingModeOn) {
                 buildingManager.PlaceHolderDisplay(hit);
 
                 if(InputControl.GetInputDown(InputControl.InputType.MouseSecondairyPress)) {

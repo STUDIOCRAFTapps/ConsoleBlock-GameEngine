@@ -23,7 +23,7 @@ public class GrabberController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		//Add the new value
-		if(Player.position.y < CollisionBlock.position.y) {
+		if(Player.position.y + 1 < CollisionBlock.position.y) {
 			foreach(Collider col in Colliders) {
 				col.enabled = false;
 			}
@@ -64,7 +64,7 @@ public class GrabberController : MonoBehaviour {
 		yield return new WaitUntil(() => Grabber.GetCurrentAnimatorStateInfo(0).IsName("GrabberGrabIdle"));
 		Fly = true;
 		yield return new WaitUntil(() => !S);
-		yield return new WaitForSeconds(0.6f);
+		yield return new WaitForSeconds(0.5f);
 		Fly = false;
 
 		Grabber.SetTrigger("Release");

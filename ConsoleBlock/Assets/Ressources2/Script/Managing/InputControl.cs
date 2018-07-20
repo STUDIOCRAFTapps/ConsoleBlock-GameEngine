@@ -96,6 +96,7 @@ public static class InputControl {
 
     public static KeyCode InputTypeToKeycode (InputType inputType) {
         //TODO: Prepare InputTypeToKeycode for custom keycode
+        int KeyboardType = PlayerPrefs.GetInt("KeyboardType", 0);
 
         switch(inputType) {
             case InputType.Close:
@@ -114,16 +115,32 @@ public static class InputControl {
             return KeyCode.E;
 
             case InputType.MouvementFoward:
-            return KeyCode.W;
+            if(KeyboardType == 0) {
+                return KeyCode.W;
+            } else {
+                return KeyCode.Z;
+            }
 
             case InputType.MouvementBackward:
-            return KeyCode.S;
+            if(KeyboardType == 0) {
+                return KeyCode.S;
+            } else {
+                return KeyCode.S;
+            }
 
             case InputType.MouvementLeft:
-            return KeyCode.A;
+            if(KeyboardType == 0) {
+                return KeyCode.A;
+            } else {
+                return KeyCode.Q;
+            }
 
             case InputType.MouvementRight:
-            return KeyCode.D;
+            if(KeyboardType == 0) {
+                return KeyCode.D;
+            } else {
+                return KeyCode.D;
+            }
 
             case InputType.MouvementJump:
             return KeyCode.Space;

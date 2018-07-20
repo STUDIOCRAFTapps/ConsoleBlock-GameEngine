@@ -231,6 +231,7 @@
     <Compile Include="Assets\Ressources2\TechnicalObjects\WindTurbine\PalmAnimator.cs" />
     <Compile Include="Assets\Ressources2\TechnicalObjects\WindTurbine\WindTurbineScript.cs" />
     <Compile Include="Assets\SwitchCodingType.cs" />
+    <Compile Include="Assets\TextFlickering.cs" />
     <Compile Include="Assets\TextSizeFitter.cs" />
     <Compile Include="Assets\Tool\StoneTextureCreatorTool.cs" />
     <Compile Include="Assets\UIAnimation.cs" />

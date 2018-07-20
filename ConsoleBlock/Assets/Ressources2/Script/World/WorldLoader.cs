@@ -218,20 +218,41 @@ public class WorldLoader : MonoBehaviour {
 
 		//Preparing collider height values
 		if(HeightValues != null) {
-			int index = 0;
-			for(int x = -1; x < 2; x++) {
-				for(int y = -1; y < 2; y++) {
-					float Height = HeightValues[x+1,y+1];
-					float Difference = 0;
+            if(PlayerBody.transform.position.y + 1 > HeightValues[1, 1]) {
+                int index = 0;
+                for(int x = -1; x < 2; x++) {
+                    for(int y = -1; y < 2; y++) {
+                        Colliders[index].gameObject.SetActive(true);
 
-					Difference = Height - Player.transform.position.y;
+                        float Height = HeightValues[x + 1, y + 1];
+                        float Difference = 0;
 
-					Colliders[index].position = new Vector3(PlayerBlockPos.x+x,Height,PlayerBlockPos.z+y);
-					Colliders[index].localScale = new Vector3(1,Mathf.Clamp(Mathf.Abs(Difference)+16,1f,Mathf.Infinity)*2,1);
+                        Difference = Height - Player.transform.position.y;
 
-					index++;
-				}
-			}
+                        Colliders[index].position = new Vector3(PlayerBlockPos.x + x, Height, PlayerBlockPos.z + y);
+                        Colliders[index].localScale = new Vector3(1, Mathf.Clamp(Mathf.Abs(Difference) + 16, 1f, Mathf.Infinity) * 2, 1);
+
+                        index++;
+                    }
+                }
+            } else {
+                int index = 0;
+                for(int x = -1; x < 2; x++) {
+                    for(int y = -1; y < 2; y++) {
+                        Colliders[index].gameObject.SetActive(false);
+
+                        float Height = HeightValues[x + 1, y + 1];
+                        float Difference = 0;
+
+                        Difference = Height - Player.transform.position.y;
+
+                        Colliders[index].position = new Vector3(PlayerBlockPos.x + x, Height, PlayerBlockPos.z + y);
+                        Colliders[index].localScale = new Vector3(1, Mathf.Clamp(Mathf.Abs(Difference) + 16, 1f, Mathf.Infinity) * 2, 1);
+
+                        index++;
+                    }
+                }
+            }
 		}
 
 		//Makes sure to update the position if nothing is under construction
@@ -276,6 +297,7 @@ public class WorldLoader : MonoBehaviour {
         List<float> PointsHeightMapValues = new List<float>();
         Vector2 DecimalPlayerPos = new Vector2(Player.position.x, Player.position.z);
         Vector2 Direction = new Vector2(Player.GetComponent<PlayerController>().Head.forward.x, Player.GetComponent<PlayerController>().Head.forward.z);
+        DecimalPlayerPos += Direction;
 
         Action RetrieveRayHeightValues = () => {
             for(int i = 0; i < 48; i++) {
@@ -369,7 +391,6 @@ public class WorldLoader : MonoBehaviour {
             t.gameObject.SetActive(false);
         }
         for(int i = 0; i < ExecutionList.Count; i++) {
-            Debug.Log("HEY");
             Transform col = GetColliderPO();
             col.position = new Vector3(ExecutionList[i].x, PointsHeightMapValues[i], ExecutionList[i].y);
             col.localScale = new Vector3(1, 150f, 1f);

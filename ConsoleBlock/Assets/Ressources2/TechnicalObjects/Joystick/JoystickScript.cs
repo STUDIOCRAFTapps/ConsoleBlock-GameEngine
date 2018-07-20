@@ -9,6 +9,8 @@ public class JoystickScript : WInteractable {
     public Vector2 CurrentRotation;
 
     bool IsSelected = false;
+    bool WasSelected = false;
+    Player lastPlayer;
 
     private void Start () {
         GlobalVariable.Add(new Variable("AxisX", VariableType.v_float, 0f, new VariableParameters(true, VariableAccessType.v_readonly)));
@@ -16,6 +18,7 @@ public class JoystickScript : WInteractable {
     }
 
     override public void OnPointedAt (Player player) {
+        lastPlayer = player;
         TargetRotation = Vector2.zero;
         if(InputControl.GetInput(InputControl.InputType.MouvementFoward)) {
             TargetRotation.x -= 1;
@@ -31,6 +34,7 @@ public class JoystickScript : WInteractable {
         }
 
         player.ForcedMouvementFreeze = true;
+        //makes shits when player seat
         IsSelected = true;
     }
 
@@ -41,6 +45,9 @@ public class JoystickScript : WInteractable {
         if(!IsSelected) {
             TargetRotation = Vector2.zero;
         }
+        if(WasSelected && !IsSelected) {
+            lastPlayer.ForcedMouvementFreeze = false;
+        }
         CurrentRotation = Vector2.Lerp(CurrentRotation, TargetRotation, 0.1f);
         if(CurrentRotation.x > 0.98f) {
             CurrentRotation.x = 1f;
@@ -50,6 +57,7 @@ public class JoystickScript : WInteractable {
         }
         Handle.localEulerAngles = new Vector3(CurrentRotation.x*17,0,CurrentRotation.y*17);
 
+        WasSelected = IsSelected;
         IsSelected = false;
     }
 }

@@ -5,6 +5,8 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour {
     public Widget[] widget;
     public DefaultUI[] UIComponents;
+    public RectTransform PauseMenu;
+    public Dropdown[] PauseMenuDropdowns;
     public Player player;
 
     public void EditWidgetValue (string Id, int Offset) {
