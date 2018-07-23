@@ -145,7 +145,11 @@ public class PlayerController : MonoBehaviour {
                     Body.position += mi;
                 }
                 if(OldEulerAngles != ParentStick.eulerAngles) {
-                    TargetCamXRot += ParentStick.eulerAngles.y - OldEulerAngles.y;
+                    Vector3 vectorA = ParentStick.forward;
+                    vectorA = new Vector3(vectorA.x, 0f, vectorA.z).normalized;
+                    Vector3 vectorB = OldEulerAngles;
+                    vectorB = new Vector3(vectorB.x, 0f, vectorB.z).normalized;
+                    TargetCamXRot -= AngleSigned(vectorA, vectorB, Vector3.up);//AngleOffAroundAxis(Quaternion.Euler(ParentStick.eulerAngles - OldEulerAngles) * Vector3.up, ParentStick.up, Vector3.up) * Mathf.Rad2Deg;//ParentStick.eulerAngles.y - OldEulerAngles.y;
                     CurrentCamYRot = TargetCamXRot;
                 }
             }
@@ -157,12 +161,18 @@ public class PlayerController : MonoBehaviour {
 
         if(ParentStick != null) {
             OldPosition = ParentStick.position;
-            OldEulerAngles = ParentStick.eulerAngles;
+            OldEulerAngles = ParentStick.forward;//ParentStick.eulerAngles;
             OldParentRelativePosition = ParentStick.InverseTransformPoint(Body.position);
             OldBodyPosition = Body.position;
         }
         OldVelocity = MainRigidbody.velocity;
         LastFrameGrounded = GroundDetected && hit.distance < 0.27f;
+    }
+
+    public static float AngleSigned (Vector3 v1, Vector3 v2, Vector3 n) {
+        return Mathf.Atan2(
+            Vector3.Dot(n, Vector3.Cross(v1, v2)),
+            Vector3.Dot(v1, v2)) * Mathf.Rad2Deg;
     }
 
     /*void LateUpdate () {

@@ -49,7 +49,7 @@ public class BuildingManager : MonoBehaviour {
             n = new Vector3(Mathf.Round(n.x * 1024f) / 1024f, Mathf.Round(n.y * 1024f) / 1024f, Mathf.Round(n.z * 1024f) / 1024f);
             Vector3 r = hit.collider.transform.localEulerAngles;                                                                        //r: Rotation
             Vector3 pr = bb.Parent.transform.eulerAngles;                                                                               //pr: Parent Rotation
-            float v = transform.parent.eulerAngles.y - pr.y;
+            float v = transform.parent.eulerAngles.y + pr.y;
             //float v = transform.parent.eulerAngles.y - 180;                                                                             //v: Player Look Direction
             float vx = bb.transform.localEulerAngles.x;
             if(v > 180) {
@@ -444,7 +444,7 @@ public class BuildingManager : MonoBehaviour {
                     hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Add(obj.transform.GetChild(0).GetComponent<WObject>());
                 }
             } else {
-                player.loader.PhysicObjectTracker.Add(obj.transform.GetChild(0).GetComponent<BuildingBlock>());
+                player.loader.PhysicObjectTracker.Add(obj.transform.GetComponent<BuildingBlock>());
             }
         } else if((BuildingBlockType == BuildingBlock.BlockType.Cube || BuildingBlockType == BuildingBlock.BlockType.Floor) && hit.collider.name == "WCollider") {
             if(PlaceHolderBlock.position != Vector3.zero) {
@@ -496,10 +496,35 @@ public class BuildingManager : MonoBehaviour {
                 player.loader.PhysicObjectTracker.Remove(hit.collider.GetComponent<BuildingBlock>());
             }
             hit.collider.GetComponent<BuildingBlock>().Parent.Childs.Remove(hit.collider.GetComponent<BuildingBlock>());
+            if(hit.collider.GetComponent<WObject>().Parent == hit.collider.GetComponent<WObject>() && hit.collider.GetComponent<BuildingBlock>().Childs.Count > 0) {
+                BuildingBlock nParent = null;
+                foreach(WObject wobj in hit.collider.GetComponent<BuildingBlock>().Childs) {
+                    if(wobj.tag == "BuildingBlock") {
+                        nParent = wobj.GetComponent<BuildingBlock>();
+                        break;
+                    }
+                }
+                if(nParent != null) {
+                    nParent.Parent = nParent;
+                    nParent.transform.parent = null;
+                    nParent.Childs = hit.collider.GetComponent<BuildingBlock>().Childs;
+                    foreach(WObject wobj in hit.collider.GetComponent<BuildingBlock>().Childs) {
+                        wobj.Parent = nParent;
+                        wobj.transform.parent = nParent.transform;
+                    }
+                }
+            }
             Destroy(hit.collider.gameObject);
         } else if(hit.collider.GetComponent<WObject>() != null) {
             if(hit.collider.GetComponent<WObject>().Parent != null) {
                 hit.collider.GetComponent<WObject>().Parent.Childs.Remove(hit.collider.GetComponent<WObject>());
+            }
+            if(hit.collider.GetComponent<WInteractable>() != null) {
+                foreach(WInteractable inter in hit.collider.GetComponent<WInteractable>().transmitter.sources) {
+                    if(inter.transmitter.sources.Contains(hit.collider.GetComponent<WInteractable>())) {
+                        inter.transmitter.sources.Remove(hit.collider.GetComponent<WInteractable>());
+                    }
+                }
             }
             Destroy(hit.collider.transform.parent.gameObject);
         }

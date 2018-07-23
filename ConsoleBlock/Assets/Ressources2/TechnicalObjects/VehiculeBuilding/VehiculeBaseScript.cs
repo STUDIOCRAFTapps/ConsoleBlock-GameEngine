@@ -60,8 +60,9 @@ public class VehiculeBaseScript : WInteractable {
 
     public void Undock () {
         if(CurrentAnchor != null) {
-            CurrentAnchor.parent.parent = null;
-            CurrentAnchor.parent.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.None;
+            CurrentAnchor.parent = null;
+            CurrentAnchor.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.None;
+            CurrentAnchor.GetComponent<Rigidbody>().useGravity = true;
             spring.connectedBody = null;
             CurrentAnchor = null;
         }
@@ -69,11 +70,12 @@ public class VehiculeBaseScript : WInteractable {
 
     public void Dock (Transform Anchor) {
         CurrentAnchor = Anchor;
-        spring.connectedBody = CurrentAnchor.parent.GetComponent<Rigidbody>();
-        CurrentAnchor.parent.parent = transform;
-        CurrentAnchor.parent.localEulerAngles = Vector3.zero;
-        CurrentAnchor.parent.localPosition = Vector3.up * 3f;
-        CurrentAnchor.parent.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll ^ RigidbodyConstraints.FreezePositionY;
+        spring.connectedBody = CurrentAnchor.GetComponent<Rigidbody>();
+        CurrentAnchor.parent = transform;
+        CurrentAnchor.localEulerAngles = Vector3.zero;
+        CurrentAnchor.localPosition = Vector3.up * 3f;
+        CurrentAnchor.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll ^ RigidbodyConstraints.FreezePositionY;
+        CurrentAnchor.GetComponent<Rigidbody>().useGravity = false;
     }
 
     public void SetRotation (int Rot) {
@@ -85,20 +87,22 @@ public class VehiculeBaseScript : WInteractable {
             Rotation = Rot;
         }
         if(CurrentAnchor != null) {
-            CurrentAnchor.parent.eulerAngles = Vector3.up * Rotation * 90;
+            CurrentAnchor.parent.localEulerAngles = Vector3.up * Rotation * 90;
         }
         GlobalVariable[0].source = Rotation;
     }
 
-    private void OnTriggerStay (Collider other) {
-        if(other.name == "VehiculeAnchor") {
-            DetectedAnchor = other.transform;
+    private void OnTriggerEnter (Collider other) {
+        if(other.tag == "BuildingBlock") {
+            if(other.GetComponent<BuildingBlock>().blockType == BuildingBlock.BlockType.Anchor && other.GetComponent<Rigidbody>() != null) {
+                DetectedAnchor = other.transform;
+            }
         }
     }
 
     private void OnTriggerExit (Collider other) {
-        if(other.name == "VehiculeAnchor") {
-            if(DetectedAnchor = other.transform) {
+        if(other.tag == "BuildingBlock") {
+            if(DetectedAnchor == other.transform) {
                 DetectedAnchor = null;
             }
         }

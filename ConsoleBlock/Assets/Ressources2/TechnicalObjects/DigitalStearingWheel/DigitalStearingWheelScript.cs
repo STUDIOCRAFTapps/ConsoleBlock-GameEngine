@@ -23,10 +23,10 @@ public class DigitalStearingWheelScript : WInteractable {
         if(InputControl.GetInput(InputControl.InputType.MouvementBackward)) {
             TargetRotation.x += 1;
         }
-        if(InputControl.GetInput(InputControl.InputType.MouvementLeft)) {
+        if(InputControl.GetInput(InputControl.InputType.MouvementRight)) {
             TargetRotation.y -= 1;
         }
-        if(InputControl.GetInput(InputControl.InputType.MouvementRight)) {
+        if(InputControl.GetInput(InputControl.InputType.MouvementLeft)) {
             TargetRotation.y += 1;
         }
 

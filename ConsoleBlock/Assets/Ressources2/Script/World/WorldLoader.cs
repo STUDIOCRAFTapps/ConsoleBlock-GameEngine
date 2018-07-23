@@ -222,7 +222,7 @@ public class WorldLoader : MonoBehaviour {
                 int index = 0;
                 for(int x = -1; x < 2; x++) {
                     for(int y = -1; y < 2; y++) {
-                        Colliders[index].gameObject.SetActive(true);
+                        //Colliders[index].gameObject.SetActive(true);
 
                         float Height = HeightValues[x + 1, y + 1];
                         float Difference = 0;
@@ -239,7 +239,7 @@ public class WorldLoader : MonoBehaviour {
                 int index = 0;
                 for(int x = -1; x < 2; x++) {
                     for(int y = -1; y < 2; y++) {
-                        Colliders[index].gameObject.SetActive(false);
+                        //Colliders[index].gameObject.SetActive(false);
 
                         float Height = HeightValues[x + 1, y + 1];
                         float Difference = 0;
@@ -347,15 +347,25 @@ public class WorldLoader : MonoBehaviour {
         List<Vector2> Positions = new List<Vector2>();
 
         for(int x = 0; x < PhysicObjectTracker.Count; x++) {
-            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0.5f)));
-            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 0.5f)));
-            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0.5f)));
-            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 0.5f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].transform.position.z - 1f)));
             for(int i = 0; i < PhysicObjectTracker[x].Childs.Count; i++) {
-                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0.5f)));
-                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 0.5f)));
-                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0.5f)));
-                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 0.5f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 0.5f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 1f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 1f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 1f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z + 0f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
+                Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
             }
         }
 
@@ -371,7 +381,7 @@ public class WorldLoader : MonoBehaviour {
                     c++;
                 }
                 for(int i = 0; i < PhysicObjectTracker[x].Childs.Count; i++) {
-                    for(int x2 = 0; x2 < 4; x2++) {
+                    for(int x2 = 0; x2 < 9; x2++) {
                         Vector2 v = Positions[c];
                         if(!ExecutionList.Contains(v)) {
                             PointsHeightMapValues.Add(worldManager.GetHeightMap(v.x, v.y)[0]);
