@@ -11,6 +11,8 @@ public class WInteractable : WObject {
     public WObjectTransmitter transmitter = new WObjectTransmitter();
     public WInteractable PowerSource = null;
 
+    public BuildingBlock AnchorChild;
+
     [HideInInspector]
     public bool IsInteracting = false;
     public bool ComsumePPS = false;

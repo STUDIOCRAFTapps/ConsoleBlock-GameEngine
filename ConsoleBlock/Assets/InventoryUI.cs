@@ -22,6 +22,10 @@ public class InventoryUI : MonoBehaviour {
     public List<RectTransform> inventorySlots;
     public RectTransform CurrentSlotIndicator;
 
+    public Image CloseUpIcon;
+    public Text CloseUpTitle;
+    public Text CloseUpDescription;
+
     // Use this for initialization
     void Start () {
         UpdateInventory();
@@ -70,6 +74,10 @@ public class InventoryUI : MonoBehaviour {
     void UpdateCurrentBlock () {
         CurrentSlotIndicator.anchoredPosition = inventorySlots[buildingManager.CurrentBlock].anchoredPosition;
         uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
+        CloseUpIcon.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
+        CloseUpTitle.text = buildingManager.Blocks[buildingManager.CurrentBlock].Name;
+        CloseUpDescription.text = buildingManager.Blocks[buildingManager.CurrentBlock].Description;
+
         buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
         buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
         buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;

@@ -492,6 +492,9 @@ public class BuildingManager : MonoBehaviour {
             }
         }
         if(hit.collider.tag == "BuildingBlock" && hit.collider.GetComponent<BuildingBlock>() != null) {
+            if(hit.collider.GetComponent<BuildingBlock>().Unbreakable) {
+                return;
+            }
             if(player.loader.PhysicObjectTracker.Contains(hit.collider.GetComponent<BuildingBlock>())) {
                 player.loader.PhysicObjectTracker.Remove(hit.collider.GetComponent<BuildingBlock>());
             }

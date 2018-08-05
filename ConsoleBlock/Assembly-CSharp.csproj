@@ -124,6 +124,7 @@
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractable.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractableCaller.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WInteractableUI.cs" />
+    <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WMaterialFile.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WObject.cs" />
     <Compile Include="Assets\Ressources2\Script\ObjectBehaviour\WObjectFile.cs" />
     <Compile Include="Assets\Ressources2\Script\PlayerController\PlatformTest.cs" />

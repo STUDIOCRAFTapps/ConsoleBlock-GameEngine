@@ -200,7 +200,7 @@ public class WorldLoader : MonoBehaviour {
         StartCoroutine(UpdateRaycollision());
 
         //DebugingText[0].text = worldManager.GetTerrainTemperature(Player.transform.position.x,Player.transform.position.z).ToString() + " : " + worldManager.GetTerrainHumidity(Player.transform.position.x,Player.transform.position.z).ToString();
-        if(DebuggingMode) {
+        if(DebuggingMode && false) {
             if(Input.GetKeyDown(KeyCode.H)) {
                 Player.position = new Vector3(UnityEngine.Random.Range(0f, 8192), 100f, UnityEngine.Random.Range(0f, 8192));
             }
@@ -260,7 +260,7 @@ public class WorldLoader : MonoBehaviour {
 			NewChunkPos = new Vector2(Mathf.Floor(Player.position.x/SimulatedChunkSize),Mathf.Floor(Player.position.z/SimulatedChunkSize));
 		}
 
-		if(Input.GetKeyDown(KeyCode.K)) {
+		if(Input.GetKeyDown(KeyCode.K) && false) {
 			StartCoroutine(CleanUp());
 		}
 
@@ -324,6 +324,33 @@ public class WorldLoader : MonoBehaviour {
         }
     }
 
+    List<Vector2> RetriveChildCollisionPosition (List<WObject> objects) {
+        List<Vector2> Positions = new List<Vector2>();
+        for(int i = 0; i < objects.Count; i++) {
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 1f), Mathf.Floor(objects[i].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 0f), Mathf.Floor(objects[i].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x - 1f), Mathf.Floor(objects[i].transform.position.z + 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 1f), Mathf.Floor(objects[i].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 0f), Mathf.Floor(objects[i].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x - 1f), Mathf.Floor(objects[i].transform.position.z + 0f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 1f), Mathf.Floor(objects[i].transform.position.z - 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x + 0f), Mathf.Floor(objects[i].transform.position.z - 1f)));
+            Positions.Add(new Vector2(Mathf.Floor(objects[i].transform.position.x - 1f), Mathf.Floor(objects[i].transform.position.z - 1f)));
+            if(objects[i].GetComponent<BuildingBlock>() != null) {
+                if(objects[i].GetComponent<BuildingBlock>().Childs.Count > 0) {
+                    Positions.AddRange(RetriveChildCollisionPosition(objects[i].GetComponent<BuildingBlock>().Childs));
+                }
+            } else if(objects[i].GetComponent<WInteractable>() != null) {
+                if(objects[i].GetComponent<WInteractable>().AnchorChild != null) {
+                    if(objects[i].GetComponent<WInteractable>().AnchorChild.Childs.Count > 0) {
+                        Positions.AddRange(RetriveChildCollisionPosition(objects[i].GetComponent<WInteractable>().AnchorChild.Childs));
+                    }
+                }
+            }
+        }
+        return Positions;
+    }
+
 	IEnumerator UpdateCollision () {
 		IsUpdatingCollision = true;
 		PHeightValues = new float[3,3];
@@ -366,29 +393,26 @@ public class WorldLoader : MonoBehaviour {
                 Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
                 Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x + 0f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
                 Positions.Add(new Vector2(Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.x - 1f), Mathf.Floor(PhysicObjectTracker[x].Childs[i].transform.position.z - 1f)));
+                if(PhysicObjectTracker[x].Childs[i].GetComponent<BuildingBlock>() != null) {
+                    if(PhysicObjectTracker[x].Childs[i].GetComponent<BuildingBlock>().Childs.Count > 0) {
+                        Positions.AddRange(RetriveChildCollisionPosition(PhysicObjectTracker[x].Childs[i].GetComponent<BuildingBlock>().Childs));
+                    }
+                } else if(PhysicObjectTracker[x].Childs[i].GetComponent<WInteractable>() != null) {
+                    if(PhysicObjectTracker[x].Childs[i].GetComponent<WInteractable>().AnchorChild != null) {
+                        if(PhysicObjectTracker[x].Childs[i].GetComponent<WInteractable>().AnchorChild.Childs.Count > 0) {
+                            Positions.AddRange(RetriveChildCollisionPosition(PhysicObjectTracker[x].Childs[i].GetComponent<WInteractable>().AnchorChild.Childs));
+                        }
+                    }
+                }
             }
         }
 
         Action RetrieveHeightValues = () => {
-            int c = 0;
-            for(int x = 0; x < PhysicObjectTracker.Count; x++) {
-                for(int x2 = 0; x2 < 4; x2++) {
-                    Vector2 vM = Positions[c];
-                    if(!ExecutionList.Contains(vM)) {
-                        PointsHeightMapValues.Add(worldManager.GetHeightMap(vM.x, vM.y)[0]);
-                        ExecutionList.Add(vM);
-                    }
-                    c++;
-                }
-                for(int i = 0; i < PhysicObjectTracker[x].Childs.Count; i++) {
-                    for(int x2 = 0; x2 < 9; x2++) {
-                        Vector2 v = Positions[c];
-                        if(!ExecutionList.Contains(v)) {
-                            PointsHeightMapValues.Add(worldManager.GetHeightMap(v.x, v.y)[0]);
-                            ExecutionList.Add(v);
-                        }
-                        c++;
-                    }
+            for(int x = 0; x < Positions.Count; x++) {
+                Vector2 vM = Positions[x];
+                if(!ExecutionList.Contains(vM)) {
+                    PointsHeightMapValues.Add(worldManager.GetHeightMap(vM.x, vM.y)[0]);
+                    ExecutionList.Add(vM);
                 }
             }
         };

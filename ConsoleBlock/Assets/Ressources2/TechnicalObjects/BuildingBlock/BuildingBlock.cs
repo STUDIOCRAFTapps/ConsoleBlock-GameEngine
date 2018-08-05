@@ -9,6 +9,8 @@ public class BuildingBlock : WObject {
     public AnchorConfigurator anchorConfigurator;
     public List<WObject> Childs = new List<WObject>();
 
+    public bool Unbreakable = false;
+
     public bool ContainsChildOfSameType (Vector3 position, Vector3 rotation, BlockType blockType) {
         foreach(WObject child in Childs) {
             if(child.GetComponent<BuildingBlock>() != null) {

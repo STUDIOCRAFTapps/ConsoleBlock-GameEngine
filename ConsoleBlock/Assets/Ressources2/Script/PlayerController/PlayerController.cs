@@ -97,7 +97,7 @@ public class PlayerController : MonoBehaviour {
                 //Body.position += Vector3.up * ((1.05f - stepJump.distance) * 1.0f + 0.3f);
                 //Body.position += MoveTo * 0.07f;
                 MainRigidbody.velocity += MoveTo * 2f;
-                MainRigidbody.velocity = new Vector3(MainRigidbody.velocity.x, Mathf.Max((1.05f - stepJump.distance) * 10f + 5.5f, MainRigidbody.velocity.y), MainRigidbody.velocity.z);
+                MainRigidbody.velocity = new Vector3(MainRigidbody.velocity.x, Mathf.Max((1.05f - stepJump.distance) * 6f + 5.5f, MainRigidbody.velocity.y), MainRigidbody.velocity.z);
             }
         }
 

@@ -744,7 +744,6 @@ public class ConsoleScript : WInteractable {
             }
 
             if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_round))) {
-                Debug.Log("Golden");
                 index = res.IndexOf(new SolveElement(SolveElementType.v_operator, OperatorType.v_round));
             } else
             if(res.Contains(new SolveElement(SolveElementType.v_operator, OperatorType.v_binairyNot))) {

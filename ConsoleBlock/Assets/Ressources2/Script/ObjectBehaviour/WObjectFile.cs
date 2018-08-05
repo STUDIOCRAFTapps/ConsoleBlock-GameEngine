@@ -5,6 +5,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Default Object", menuName = "ConsoleBlock/Object File")]
 public class WObjectFile : ScriptableObject {
     public string Name;
+    public string Description;
     public GameObject Prefab;
     public Sprite Icon;
 
