@@ -123,7 +123,14 @@ public class Player : MonoBehaviour {
                 }
             }
             if(InputControl.GetInputDown(InputControl.InputType.BuildingInventory)) {
-                buildingManager.BuildingBlockType = BuildingBlock.BlockType.Objects;
+                if(buildingManager.BuildingBlockType == BuildingBlock.BlockType.Objects) {
+                    buildingManager.CurrentInventory = 0;
+                } else if(buildingManager.BuildingBlockType == BuildingBlock.BlockType.Cube ||
+                        buildingManager.BuildingBlockType == BuildingBlock.BlockType.Floor ||
+                        buildingManager.BuildingBlockType == BuildingBlock.BlockType.Wall ||
+                        buildingManager.BuildingBlockType == BuildingBlock.BlockType.Stair) {
+                    buildingManager.CurrentInventory = 1;
+                }
                 inventory.gameObject.SetActive(!inventory.gameObject.activeSelf);
             }
         }

@@ -7,6 +7,7 @@ using UnityEngine;
 
 public class BuildingManager : MonoBehaviour {
 
+    public int CurrentInventory = 0;
     public float BlockSize = 2;
     public BuildingBlock.BlockType BuildingBlockType;
     public Transform PlaceHolderObject;
@@ -22,8 +23,50 @@ public class BuildingManager : MonoBehaviour {
     public Player player;
 
     public WObjectFile[] Blocks;
+    public WMaterialFile[] Materials;
     public int CurrentBlock = 0;
     public int CurrentRotation = 0;
+    public WMaterialFile CurrentMaterial;
+
+    public int GetInventorySlotCount () {
+        if(CurrentInventory == 0) {
+            return Blocks.Length;
+        } else if(CurrentInventory == 1) {
+            return Materials.Length;
+        } else {
+            return 0;
+        }
+    }
+
+    public Sprite GetSpriteAtIndex (int index) {
+        if(CurrentInventory == 0) {
+            return Blocks[index].Icon;
+        } else if(CurrentInventory == 1) {
+            return Materials[index].Icon;
+        } else {
+            return null;
+        }
+    }
+
+    public string GetNameAtIndex (int index) {
+        if(CurrentInventory == 0) {
+            return Blocks[index].Name;
+        } else if(CurrentInventory == 1) {
+            return Materials[index].Name;
+        } else {
+            return "Error";
+        }
+    }
+
+    public string GetDescriptionAtIndex (int index) {
+        if(CurrentInventory == 0) {
+            return Blocks[index].Description;
+        } else if(CurrentInventory == 1) {
+            return Materials[index].Description;
+        } else {
+            return "An unexisting inventory has been selected.";
+        }
+    }
 
     public Vector3 RelativeDirection (Vector3 Direction, RaycastHit hit) {
         return hit.collider.GetComponent<BuildingBlock>().Parent.transform.TransformDirection(Direction);

@@ -7,5 +7,5 @@ public class WMaterialFile : ScriptableObject {
     public string Name;
     public string Description;
     public Sprite Icon;
-    public Texture Texture;
+    public Material Material;
 }

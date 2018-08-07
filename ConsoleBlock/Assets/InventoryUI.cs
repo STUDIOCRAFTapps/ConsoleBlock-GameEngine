@@ -6,7 +6,6 @@ using UnityEngine.UI;
 public class InventoryUI : MonoBehaviour {
 
     public int SizeX = 5;
-    public int SizeY = 2;
     int CSizeX = 5;
     int CSizeY = 4;
 
@@ -29,14 +28,15 @@ public class InventoryUI : MonoBehaviour {
     // Use this for initialization
     void Start () {
         UpdateInventory();
-        UpdateCurrentBlock();
+        UpdateCurrentSelection();
     }
 	
 	// Update is called once per frame
 	void Update () {
+        int SizeY = Mathf.FloorToInt(buildingManager.GetInventorySlotCount() / SizeX);
         if(SizeX != CSizeX || SizeY != CSizeY) {
             UpdateInventory();
-            UpdateCurrentBlock();
+            UpdateCurrentSelection();
         }
 
         if(InputControl.GetInputDown(InputControl.InputType.SelectionLeft)) {
@@ -45,14 +45,14 @@ public class InventoryUI : MonoBehaviour {
                 buildingManager.CurrentBlock = buildingManager.Blocks.Length-1;
 
             }
-            UpdateCurrentBlock();
+            UpdateCurrentSelection();
         }
         if(InputControl.GetInputDown(InputControl.InputType.SelectionRight)) {
             buildingManager.CurrentBlock += 1;
             if(buildingManager.CurrentBlock >= buildingManager.Blocks.Length) {
                 buildingManager.CurrentBlock = 0;
             }
-            UpdateCurrentBlock();
+            UpdateCurrentSelection();
         }
         if(InputControl.GetInputDown(InputControl.InputType.SelectionUp)) {
             buildingManager.CurrentBlock -= SizeX;
@@ -60,27 +60,31 @@ public class InventoryUI : MonoBehaviour {
                 buildingManager.CurrentBlock += SizeX;
 
             }
-            UpdateCurrentBlock();
+            UpdateCurrentSelection();
         }
         if(InputControl.GetInputDown(InputControl.InputType.SelectionDown)) {
             buildingManager.CurrentBlock += SizeX;
             if(buildingManager.CurrentBlock >= buildingManager.Blocks.Length) {
                 buildingManager.CurrentBlock -= SizeX;
             }
-            UpdateCurrentBlock();
+            UpdateCurrentSelection();
         }
     }
 
-    void UpdateCurrentBlock () {
+    void UpdateCurrentSelection () {
         CurrentSlotIndicator.anchoredPosition = inventorySlots[buildingManager.CurrentBlock].anchoredPosition;
-        uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
-        CloseUpIcon.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
-        CloseUpTitle.text = buildingManager.Blocks[buildingManager.CurrentBlock].Name;
-        CloseUpDescription.text = buildingManager.Blocks[buildingManager.CurrentBlock].Description;
+        CloseUpIcon.sprite = buildingManager.GetSpriteAtIndex(buildingManager.CurrentBlock);
+        CloseUpTitle.text = buildingManager.GetNameAtIndex(buildingManager.CurrentBlock);
+        CloseUpDescription.text = buildingManager.GetDescriptionAtIndex(buildingManager.CurrentBlock);
 
-        buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
-        buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
-        buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;
+        if(buildingManager.CurrentInventory == 0) {
+            uiManager.widget[0].Display.sprite = buildingManager.Blocks[buildingManager.CurrentBlock].Icon;
+            buildingManager.PlaceHolderObject.GetChild(0).transform.localPosition = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderPosition;
+            buildingManager.PlaceHolderObject.GetChild(0).transform.localScale = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderScale;
+            buildingManager.PlaceHolderObject.GetChild(0).transform.localEulerAngles = buildingManager.Blocks[buildingManager.CurrentBlock].CustomPlaceHolderRotation;
+        } else if(buildingManager.CurrentInventory == 1) {
+            buildingManager.CurrentMaterial = buildingManager.Materials[buildingManager.CurrentBlock];
+        }
     }
 
     void UpdateInventory () {
@@ -89,14 +93,15 @@ public class InventoryUI : MonoBehaviour {
         }
         inventorySlots.Clear();
 
+        int SizeY = Mathf.FloorToInt(buildingManager.GetInventorySlotCount() / SizeX);
         inventoryRect.sizeDelta = new Vector2(Steps + Slots * SizeX, Steps + Slots * SizeY);
         CSizeX = SizeX;
         CSizeY = SizeY;
 
-        for(int i = 0; i < buildingManager.Blocks.Length; i++) {
+        for(int i = 0; i < buildingManager.GetInventorySlotCount(); i++) {
             RectTransform nSlot = Instantiate(inventorySlotTemplate, inventoryMask.transform);
             nSlot.gameObject.SetActive(true);
-            nSlot.GetComponent<Image>().sprite = buildingManager.Blocks[i].Icon;
+            nSlot.GetComponent<Image>().sprite = buildingManager.GetSpriteAtIndex(i);
             inventorySlots.Add(nSlot);
             nSlot.anchoredPosition = new Vector2(Steps/2f+(2/Ratio)+(i-Mathf.FloorToInt(i/SizeX)*SizeX)*Slots,-Steps/2f+(-2/Ratio)+(Mathf.FloorToInt(i / SizeX))*-Slots);
         }
